@@ -88,14 +88,14 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
         val reason = Attachment(
                 fallback = "PR #${pr.number} fast-tracked by $senderRaw, see ${pr.html_url}",
                 color = "warning",
-                pretext = ":warning: :mag_right: $otherMention please look at this " +
-                        "<${pr.html_url}|PR> that " + "was fast-tracked by $senderMention",
+                pretext = ":mag_right: $otherMention :warning: please look at this " +
+                        "<${pr.html_url}|PR> that was fast-tracked by $senderMention",
                 title = "PR #${pr.number} \"${pr.title}\"",
                 title_link = pr.html_url,
                 fields = listOf(
                         Field("Event", "Fast Track", true),
                         Field("Bot Action", "Auto-Approved PR", true),
-                        Field("If You Where @Mentioned", " - <${pr.html_url}/files|Review code>" +
+                        Field("If You Where @Mentioned before warning sign", " - <${pr.html_url}/files|Review code>" +
                                 " even if it was merged and remove label `${repo.watchedLabel}` once done." +
                                 "\n - <$issueUrl|Create an issue> if you see any problem with the merged code.", false)
                 )
