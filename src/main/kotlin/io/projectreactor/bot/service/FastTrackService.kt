@@ -24,8 +24,14 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
         val sender = event.sender.login
 
         if (!repo.maintainers.containsKey(author)) {
-            //TODO notify that only PRs from maintainers can be fast-tracked
-            return HttpStatus.NOT_MODIFIED.toMono()
+            val senderId = repo.maintainers[sender]
+            val notif = if (senderId == null) sender else "<@$senderId>"
+
+            return slackBot.sendMessage(
+                    TextMessage("$notif I cannot fast-track approve for user" +
+                            " $author as he/she is not in my list of maintainers." +
+                            " Please do a formal PR review instead.", null))
+                    .map { it.statusCode() }
         }
 
         val toNotify = repo.maintainers
