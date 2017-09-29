@@ -1,5 +1,6 @@
 package io.projectreactor.bot.github
 
+import io.projectreactor.bot.github.data.PrUpdate
 import io.projectreactor.bot.service.FastTrackService
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -15,13 +16,9 @@ import reactor.core.publisher.Mono
 class GithubController(val fastTrackService: FastTrackService) {
 
     @PostMapping("/gh/pr", consumes = arrayOf(MediaType.APPLICATION_JSON_VALUE))
-    fun onPrUpdate(@RequestBody body: PrUpdate): Mono<ResponseEntity<Unit>> {
-        val org = body.org
-        val repo = body.repo
-        val labels = body.labels
-        val prId = body.id
-
-        return fastTrackService.fastTrack(prId, org, repo, labels)
+    fun prHook(@RequestBody body: PrUpdate): Mono<ResponseEntity<Unit>> {
+        return fastTrackService.process(body)
+                .map { ResponseEntity.status(it).build<Unit>() }
     }
 
 }

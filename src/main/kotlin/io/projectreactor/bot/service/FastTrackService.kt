@@ -1,15 +1,16 @@
 package io.projectreactor.bot.service
 
 import io.projectreactor.bot.config.GitHubProperties
-import io.projectreactor.bot.slack.Attachment
-import io.projectreactor.bot.slack.Field
-import io.projectreactor.bot.slack.TextMessage
-import org.springframework.http.HttpStatus.*
-import org.springframework.http.ResponseEntity
-import org.springframework.http.ResponseEntity.*
+import io.projectreactor.bot.config.GitHubProperties.Repo
+import io.projectreactor.bot.github.data.PrUpdate
+import io.projectreactor.bot.github.data.Repository
+import io.projectreactor.bot.slack.data.Attachment
+import io.projectreactor.bot.slack.data.Field
+import io.projectreactor.bot.slack.data.TextMessage
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
-import java.util.stream.Collectors
+import reactor.core.publisher.toMono
 
 /**
  * @author Simon Baslé
@@ -17,41 +18,56 @@ import java.util.stream.Collectors
 @Service
 class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
 
-    fun fastTrack(prId: String, repository: String, organization: String, labels: Set<String>)
-            : Mono<ResponseEntity<Unit>> {
-        val repo = ghProps.repos.values
-                .stream()
-                //check the pr is on a relevant repo
-                .filter { it.org == organization && it.repo == repository
-                        && labels.contains(it.watchedLabel) }
-                .findFirst()
-                .orElse(null)
+    fun fastTrack(event: PrUpdate, repo: Repo): Mono<HttpStatus> {
+        val pr = event.pull_request
+        val author = pr.author.login
+        val sender = event.sender.login
 
-        return Mono.justOrEmpty(repo)
-                .map({
-                    val maintainerNotif = it.maintainers.values.stream()
-                            .map { "<@$it>" }
-                            .collect(Collectors.joining(", "))
+        if (!repo.maintainers.containsKey(author)) {
+            //TODO notify that only PRs from maintainers can be fast-tracked
+            return HttpStatus.NOT_MODIFIED.toMono()
+        }
 
-                    val reason = Attachment(
-                            fallback = "Please, ${it.maintainers.keys}, look at fast tracked PR $organization/$repository#$prId",
-                            color = "warning",
-                            pretext = ":warning: $maintainerNotif, please look at this PR:",
-                            title = "$organization/$repository#$prId",
-                            title_link = "http://github.com/$organization/$repository/issues/$prId",
-                            fields = listOf(
-                                    Field("Reason", "Fast Tracked", true),
-                                    Field("Labels", labels.stream().collect(Collectors.joining(", ")), true),
-                                    Field("Recommended Action", "Review code even though it was merged and remove ${repo.watchedLabel} once done" +
-                                            "\nor create an issue if something is up", false)
-                            )
-                    )
+        val toNotify = repo.maintainers
+                .map { if (it.key == sender) "@${it.key}" else "<@${it.value}>" }
+                .joinToString(", ")
 
-                    TextMessage(null, listOf(reason))
-                })
+        val reason = Attachment(
+                fallback = "Please, ${repo.maintainers.keys}, look at fast tracked PR ${pr.html_url}",
+                color = event.label?.color ?: "warning",
+                pretext = ":warning: $toNotify, please look at this PR:",
+                title = pr.title,
+                title_link = pr.html_url,
+                fields = listOf(
+                        Field("Reason", "Fast Tracked\n${repo.watchedLabel}", true),
+                        Field("Fast Tracked By", sender, true),
+                        Field("Recommended Action", "Review code even if it" +
+                                "was merged and remove ${repo.watchedLabel} once done" +
+                                "\nor create an issue if something is up", false)
+                )
+        )
+
+        return Mono.just(TextMessage(null, listOf(reason)))
                 .flatMap { slackBot.sendMessage(it) }
                 .map { it.statusCode() }
-                .defaultIfEmpty(ACCEPTED)
-                .map { status(it).build<Unit>() }
+    }
+
+    fun findRepo(repo: Repository) : Repo? {
+        return ghProps.repos.values
+                .stream()
+                //check the pr is on a relevant repo
+                .filter { repo.full_name == "${it.org}/${it.repo}" }
+                .findFirst()
+                .orElse(null)
+    }
+
+    fun process(event: PrUpdate) : Mono<HttpStatus> {
+        val repo = findRepo(event.repository) ?: return HttpStatus.NOT_MODIFIED.toMono()
+
+        if (event.action == "labelled" && event.label?.name == repo.watchedLabel) {
+            return fastTrack(event, repo)
+        }
+
+        return HttpStatus.NOT_MODIFIED.toMono()
     }
 }
