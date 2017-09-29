@@ -27,12 +27,24 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
         val senderNotif = if (senderId == null) sender else "<@$senderId>"
 
         if (!repo.maintainers.containsKey(author)) {
-            val notif = if (senderId == null) sender else "<@$senderId>"
+            val message = Attachment(
+                    fallback = "$sender I cannot fast-track approve PRs from $author, see ${pr.html_url}",
+                    color = "error",
+                    pretext = ":boom: $senderNotif I cannot fast-track approve for user '$author'" +
+                            " as he/she is not in my list of maintainers." +
+                            "\nPlease do a formal PR review instead.",
+                    title = pr.title,
+                    title_link = pr.html_url,
+                    fields = listOf(
+                            Field("Trigger", "Fast Track", true),
+                            Field("Label", repo.watchedLabel, true),
+                            Field("By", sender, true),
+                            Field("Bot Action", "Rejected", true)
+                    )
+            )
 
             return slackBot.sendMessage(
-                    TextMessage("$notif I cannot fast-track approve for user" +
-                            " $author as he/she is not in my list of maintainers." +
-                            " Please do a formal PR review instead.", null))
+                    TextMessage(null, listOf(message)))
                     .map { it.statusCode() }
         }
 
