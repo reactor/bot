@@ -18,6 +18,32 @@ import reactor.core.publisher.toMono
 @Service
 class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
 
+    fun cancelFastTrack(event: PrUpdate, repo: Repo): Mono<HttpStatus> {
+        val pr = event.pull_request
+        val sender = event.sender.login
+
+        val senderId = repo.maintainers[sender]
+        val senderNotif = if (senderId == null) sender else "<@$senderId>"
+
+        val message = Attachment(
+                fallback = "Looks like $sender cancelled fast-track of PR ${pr.html_url} before it was merged.",
+                color = "good",
+                pretext = ":white_check_mark: Looks like $senderNotif cancelled fast-track of PR #${pr.number} before it was merged :+1:",
+                title = pr.title,
+                title_link = pr.html_url,
+                fields = listOf(
+                        Field("Trigger", "Fast Track", true),
+                        Field("Bot Action", "Removed Auto-Approve", true)
+                )
+        )
+
+        //TODO find review by bot and remove it
+
+        return slackBot.sendMessage(
+                TextMessage(null, listOf(message)))
+                .map { it.statusCode() }
+    }
+
     fun fastTrack(event: PrUpdate, repo: Repo): Mono<HttpStatus> {
         val pr = event.pull_request
         val author = pr.author.login
@@ -92,6 +118,11 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
 
         if (event.action == "labeled" && event.label?.name == repo.watchedLabel) {
             return fastTrack(event, repo)
+        }
+
+        if (event.action == "unlabeled" && event.label?.name == repo.watchedLabel
+                && event.pull_request.merged_by == null) {
+            return cancelFastTrack(event, repo)
         }
 
         return HttpStatus.NO_CONTENT.toMono()
