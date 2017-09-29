@@ -29,7 +29,7 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
         if (!repo.maintainers.containsKey(author)) {
             val message = Attachment(
                     fallback = "$sender I cannot fast-track approve PRs from $author, see ${pr.html_url}",
-                    color = "error",
+                    color = "danger",
                     pretext = ":boom: $senderNotif I cannot fast-track approve for user '$author'" +
                             " as he/she is not in my list of maintainers." +
                             "\nPlease do a formal PR review instead.",
@@ -56,8 +56,8 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
         val reason = Attachment(
                 fallback = "Please, ${repo.maintainers.keys}, look at PR ${pr.html_url}, " +
                         "fast-tracked by $sender",
-                color = event.label?.color ?: "warning",
-                pretext = ":warning: $toNotify please look at this PR that was fast-tracked by $senderNotif",
+                color = "warning",
+                pretext = ":warning: :mag_right: $toNotify please look at this PR that was fast-tracked by $senderNotif",
                 title = pr.title,
                 title_link = pr.html_url,
                 fields = listOf(
