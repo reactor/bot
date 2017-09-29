@@ -1,4 +1,4 @@
-package io.projectreactor.bot.slack
+package io.projectreactor.bot.slack.data
 
 data class Attachment(
         val fallback: String, //Required plain-text summary of the attachment

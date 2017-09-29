@@ -1,4 +1,4 @@
-package io.projectreactor.bot.slack
+package io.projectreactor.bot.slack.data
 
 data class Field(
         val title: String,

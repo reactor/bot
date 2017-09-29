@@ -1,6 +1,6 @@
 package io.projectreactor.bot.service
 
-import io.projectreactor.bot.slack.TextMessage
+import io.projectreactor.bot.slack.data.TextMessage
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.ClientResponse
