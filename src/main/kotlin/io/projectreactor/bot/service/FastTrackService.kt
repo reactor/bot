@@ -11,6 +11,7 @@ import io.projectreactor.bot.slack.data.TextMessage
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.server.ServerResponse
 import reactor.core.publisher.Mono
+import java.net.URLEncoder
 
 /**
  * @author Simon Baslé
@@ -62,13 +63,11 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
                 color = "danger",
                 pretext = ":boom: $senderMention I cannot fast-track approve for user '$authorRaw'" +
                         " as he/she is not in my list of maintainers." +
-                        "\nPlease do a formal PR review instead.",
-                title = pr.title,
+                        "\nPlease do a formal <${pr.html_url}/files|PR review> instead.",
+                title = "PR #${pr.number} \"${pr.title}\"",
                 title_link = pr.html_url,
                 fields = listOf(
-                        Field("Trigger", "Fast Track", true),
-                        Field("Label", repo.watchedLabel, true),
-                        Field("By", senderRaw, true),
+                        Field("Event", "Fast Track", true),
                         Field("Bot Action", "Rejected", true)
                 )
         )
@@ -80,22 +79,26 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
                                        senderMention: String,
                                        otherMention: String,
                                        senderRaw: String): TextMessage {
+        val issueTitle = URLEncoder.encode("Post-facto review of #${pr.number}", "utf-8")
+        val issueBody = URLEncoder.encode("I saw issues while reviewing #${pr.number}, " +
+                "which was fast-tracked by @$senderRaw", "utf-8")
+        val issueUrl = pr.html_url.replace("pull/${pr.number}",
+                "issues/new?title=$issueTitle&body=$issueBody")
+
         val reason = Attachment(
                 fallback = "Please, ${repo.maintainers.keys}, look at PR ${pr.html_url}, " +
                         "fast-tracked by $senderRaw",
                 color = "warning",
-                pretext = ":warning: :mag_right: $otherMention please look at this PR that " +
-                        "was fast-tracked by $senderMention",
-                title = pr.title,
+                pretext = ":warning: :mag_right: $otherMention please look at this " +
+                        "<${pr.html_url}|PR> that " + "was fast-tracked by $senderMention",
+                title = "PR #${pr.number} \"${pr.title}\"",
                 title_link = pr.html_url,
                 fields = listOf(
-                        Field("Trigger", "Fast Track", true),
-                        Field("Label", repo.watchedLabel, true),
-                        Field("By", senderRaw, true),
+                        Field("Event", "Fast Track", true),
                         Field("Bot Action", "Auto-Approved PR", true),
-                        Field("If You Where @Mentioned", " - Review code even if it " +
-                                "was merged and remove label `${repo.watchedLabel}` once done." +
-                                "\n - Create an issue if you see any problem with the merged code.", false)
+                        Field("If You Where @Mentioned", " - <${pr.html_url}/files|Review code>" +
+                                " even if it was merged and remove label `${repo.watchedLabel}` once done." +
+                                "\n - <$issueUrl|Create an issue> if you see any problem with the merged code.", false)
                 )
         )
         return TextMessage(null, listOf(reason))
@@ -106,11 +109,12 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
         val message = Attachment(
                 fallback = "Looks like $senderRaw cancelled fast-track of PR ${pr.html_url} before it was merged.",
                 color = "good",
-                pretext = ":white_check_mark: Looks like $senderMention cancelled fast-track of PR #${pr.number} before it was merged :+1:",
-                title = pr.title,
+                pretext = ":white_check_mark: Looks like $senderMention cancelled fast-track of " +
+                        "PR <${pr.html_url}|#${pr.number}> before it was merged :+1:",
+                title = "PR #${pr.number} \"${pr.title}\"",
                 title_link = pr.html_url,
                 fields = listOf(
-                        Field("Trigger", "Fast Track", true),
+                        Field("Event", "Fast Track Cancelled", true),
                         Field("Bot Action", "Removed Auto-Approve", true)
                 )
         )
