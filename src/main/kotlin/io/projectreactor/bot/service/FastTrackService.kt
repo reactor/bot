@@ -23,8 +23,10 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
         val author = pr.author.login
         val sender = event.sender.login
 
+        val senderId = repo.maintainers[sender]
+        val senderNotif = if (senderId == null) sender else "<@$senderId>"
+
         if (!repo.maintainers.containsKey(author)) {
-            val senderId = repo.maintainers[sender]
             val notif = if (senderId == null) sender else "<@$senderId>"
 
             return slackBot.sendMessage(
@@ -35,23 +37,29 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
         }
 
         val toNotify = repo.maintainers
-                .map { if (it.key == sender) "@${it.key}" else "<@${it.value}>" }
+                .filter { it.key != sender }
+                .map { "<@${it.value}>" }
                 .joinToString(", ")
 
         val reason = Attachment(
-                fallback = "Please, ${repo.maintainers.keys}, look at fast tracked PR ${pr.html_url}",
+                fallback = "Please, ${repo.maintainers.keys}, look at PR ${pr.html_url}, " +
+                        "fast-tracked by $sender",
                 color = event.label?.color ?: "warning",
-                pretext = ":warning: $toNotify, please look at this PR:",
+                pretext = ":warning: $toNotify please look at this PR that was fast-tracked by $senderNotif",
                 title = pr.title,
                 title_link = pr.html_url,
                 fields = listOf(
-                        Field("Reason", "Fast Tracked\n${repo.watchedLabel}", true),
-                        Field("Fast Tracked By", sender, true),
-                        Field("Recommended Action", "Review code even if it" +
-                                "was merged and remove ${repo.watchedLabel} once done" +
-                                "\nor create an issue if something is up", false)
+                        Field("Trigger", "Fast Track", true),
+                        Field("Label", repo.watchedLabel, true),
+                        Field("By", sender, true),
+                        Field("Bot Action", "Auto-Approved PR", true),
+                        Field("If You Where @Mentioned", " - Review code even if it " +
+                                "was merged and remove label `${repo.watchedLabel}` once done." +
+                                "\n - Create an issue if you see any problem with the merged code.", false)
                 )
         )
+
+        //TODO actual approve
 
         return Mono.just(TextMessage(null, listOf(reason)))
                 .flatMap { slackBot.sendMessage(it) }
