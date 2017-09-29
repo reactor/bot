@@ -68,12 +68,12 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
     }
 
     fun process(event: PrUpdate) : Mono<HttpStatus> {
-        val repo = findRepo(event.repository) ?: return HttpStatus.NOT_MODIFIED.toMono()
+        val repo = findRepo(event.repository) ?: return HttpStatus.NO_CONTENT.toMono()
 
-        if (event.action == "labelled" && event.label?.name == repo.watchedLabel) {
+        if (event.action == "labeled" && event.label?.name == repo.watchedLabel) {
             return fastTrack(event, repo)
         }
 
-        return HttpStatus.NOT_MODIFIED.toMono()
+        return HttpStatus.NO_CONTENT.toMono()
     }
 }
