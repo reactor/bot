@@ -59,7 +59,7 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
                                           senderRaw: String,
                                           authorRaw: String): TextMessage {
         val rich = Attachment(
-                fallback = "$senderRaw I cannot fast-track approve PRs from $authorRaw, see ${pr.html_url}",
+                fallback = "Cannot fast-track PR #${pr.number}, see ${pr.html_url}",
                 color = "danger",
                 pretext = ":boom: $senderMention I cannot fast-track approve for user '$authorRaw'" +
                         " as he/she is not in my list of maintainers." +
@@ -86,8 +86,7 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
                 "issues/new?title=$issueTitle&body=$issueBody")
 
         val reason = Attachment(
-                fallback = "Please, ${repo.maintainers.keys}, look at PR ${pr.html_url}, " +
-                        "fast-tracked by $senderRaw",
+                fallback = "PR #${pr.number} fast-tracked by $senderRaw, see ${pr.html_url}",
                 color = "warning",
                 pretext = ":warning: :mag_right: $otherMention please look at this " +
                         "<${pr.html_url}|PR> that " + "was fast-tracked by $senderMention",
@@ -107,7 +106,7 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
     protected fun msgCancelFastTrack(pr: PullRequest, senderMention: String, senderRaw: String)
             : TextMessage {
         val message = Attachment(
-                fallback = "Looks like $senderRaw cancelled fast-track of PR ${pr.html_url} before it was merged.",
+                fallback = "PR #${pr.number} fast-track cancelled by $senderRaw, see ${pr.html_url}",
                 color = "good",
                 pretext = ":white_check_mark: Looks like $senderMention cancelled fast-track of " +
                         "PR <${pr.html_url}|#${pr.number}> before it was merged :+1:",
