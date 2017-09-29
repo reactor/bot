@@ -9,6 +9,7 @@ import io.projectreactor.bot.slack.data.Field
 import io.projectreactor.bot.slack.data.TextMessage
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.server.ServerResponse
 import reactor.core.publisher.Mono
 import reactor.core.publisher.toMono
 
@@ -18,7 +19,7 @@ import reactor.core.publisher.toMono
 @Service
 class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
 
-    fun cancelFastTrack(event: PrUpdate, repo: Repo): Mono<HttpStatus> {
+    fun cancelFastTrack(event: PrUpdate, repo: Repo): Mono<ServerResponse> {
         val pr = event.pull_request
         val sender = event.sender.login
 
@@ -41,10 +42,9 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
 
         return slackBot.sendMessage(
                 TextMessage(null, listOf(message)))
-                .map { it.statusCode() }
     }
 
-    fun fastTrack(event: PrUpdate, repo: Repo): Mono<HttpStatus> {
+    fun fastTrack(event: PrUpdate, repo: Repo): Mono<ServerResponse> {
         val pr = event.pull_request
         val author = pr.author.login
         val sender = event.sender.login
@@ -71,7 +71,6 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
 
             return slackBot.sendMessage(
                     TextMessage(null, listOf(message)))
-                    .map { it.statusCode() }
         }
 
         val toNotify = repo.maintainers
@@ -101,7 +100,6 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
 
         return Mono.just(TextMessage(null, listOf(reason)))
                 .flatMap { slackBot.sendMessage(it) }
-                .map { it.statusCode() }
     }
 
     fun findRepo(repo: Repository) : Repo? {
@@ -113,8 +111,8 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
                 .orElse(null)
     }
 
-    fun process(event: PrUpdate) : Mono<HttpStatus> {
-        val repo = findRepo(event.repository) ?: return HttpStatus.NO_CONTENT.toMono()
+    fun process(event: PrUpdate) : Mono<ServerResponse> {
+        val repo = findRepo(event.repository) ?: return ServerResponse.noContent().build()
 
         if (event.action == "labeled" && event.label?.name == repo.watchedLabel) {
             return fastTrack(event, repo)
@@ -125,6 +123,6 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
             return cancelFastTrack(event, repo)
         }
 
-        return HttpStatus.NO_CONTENT.toMono()
+        return ServerResponse.noContent().build()
     }
 }
