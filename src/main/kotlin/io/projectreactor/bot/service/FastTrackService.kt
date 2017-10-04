@@ -5,11 +5,17 @@ import io.projectreactor.bot.config.GitHubProperties.Repo
 import io.projectreactor.bot.github.data.PrUpdate
 import io.projectreactor.bot.github.data.PullRequest
 import io.projectreactor.bot.github.data.Repository
+import io.projectreactor.bot.github.data.ResponseReview
 import io.projectreactor.bot.slack.data.Attachment
 import io.projectreactor.bot.slack.data.Field
 import io.projectreactor.bot.slack.data.TextMessage
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.bodyToMono
 import org.springframework.web.reactive.function.server.ServerResponse
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.net.URLEncoder
 
@@ -17,7 +23,29 @@ import java.net.URLEncoder
  * @author Simon Baslé
  */
 @Service
-class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
+class FastTrackService(val ghProps: GitHubProperties,
+                       val slackBot: SlackBot,
+                       @Qualifier("githubClient") val client: WebClient) {
+
+    companion object {
+        val LOG = LoggerFactory.getLogger(FastTrackService::class.java)
+    }
+
+    fun dismissBotReview(event: PrUpdate, repo: Repo): Mono<Void> {
+        return client.get()
+                .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
+                .retrieve()
+                .bodyToMono<Array<ResponseReview>>()
+                .flatMapMany { Flux.fromArray(it) }
+                .filter { it.user.login == ghProps.botUsername && it.state == "APPROVED" }
+                .doOnNext { LOG.debug("Dismissing review ${it.html_url}") }
+                .flatMap { client.put()
+                        .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews/${it.id}/dismissals")
+                        .syncBody("{\"message\": \"Fast-track cancelled by @${event.sender.login}\"}")
+                        .exchange()
+                }
+                .then()
+    }
 
     fun cancelFastTrack(event: PrUpdate, repo: Repo): Mono<ServerResponse> {
         val pr = event.pull_request
@@ -26,9 +54,25 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
         val senderId = repo.maintainers[sender]
         val senderNotif = if (senderId == null) sender else "<@$senderId>"
 
-        //TODO find review by bot and remove it
-        return slackBot.sendMessage(
-                msgCancelFastTrack(pr, senderNotif, sender))
+        return dismissBotReview(event, repo)
+                .then(slackBot.sendMessage(msgCancelFastTrack(pr, senderNotif, sender)))
+    }
+
+    fun reviewedFastTrack(event: PrUpdate, repo: Repo): Mono<ServerResponse> {
+        val pr = event.pull_request
+        val sender = event.sender.login
+        val merger = event.pull_request.merged_by?.login ?: "unknown"
+
+        val senderId = repo.maintainers[sender]
+        val senderNotif = if (senderId == null) sender else "<@$senderId>"
+
+        val mergerId = repo.maintainers[merger]
+        val mergerNotif = if (mergerId == null) merger else "<@$mergerId>"
+
+        return dismissBotReview(event, repo)
+                .then(slackBot.sendMessage(msgReviewedFastTrack(pr,
+                        mergerNotif, merger,
+                        senderNotif, sender)))
     }
 
     fun fastTrack(event: PrUpdate, repo: Repo): Mono<ServerResponse> {
@@ -49,9 +93,14 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
             )
         }
 
-        //TODO do the actual Approve
-        return slackBot.sendMessage(
-                msgFastTrackApproved(pr, repo, senderNotify, otherNotify, sender))
+        return client.post()
+                .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
+                .syncBody("{\"body\": \"Fast-track requested by @${event.sender.login}\", \"event\": \"APPROVE\"}")
+                .retrieve()
+                .bodyToMono<ResponseReview>()
+                .flatMap { slackBot.sendMessage(
+                        msgFastTrackApproved(pr, repo, it, senderNotify, otherNotify, sender))
+                }
     }
 
     protected fun msgFastTrackNotPossible(pr: PullRequest, repo: Repo,
@@ -76,6 +125,7 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
     }
 
     protected fun msgFastTrackApproved(pr: PullRequest, repo: Repo,
+                                       review: ResponseReview,
                                        senderMention: String,
                                        otherMention: String,
                                        senderRaw: String): TextMessage {
@@ -98,7 +148,8 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
                         Field("If You Where @Mentioned before warning sign", " - <${pr.html_url}/files|Review code>" +
                                 " even if it was merged and remove label `${repo.watchedLabel}` once done." +
                                 "\n - <$issueUrl|Create an issue> if you see any problem with the merged code.", false)
-                )
+                ),
+                footer = "PR Review by bot: ${review.html_url}"
         )
         return TextMessage(null, listOf(reason))
     }
@@ -115,7 +166,28 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
                 fields = listOf(
                         Field("Event", "Fast Track Cancelled", true),
                         Field("Bot Action", "Removed Auto-Approve", true)
-                )
+                ),
+                footer = "PR was not merged and label was removed by @$senderRaw"
+        )
+        return TextMessage(null, listOf(message))
+    }
+
+    protected fun msgReviewedFastTrack(pr: PullRequest,
+                                       mergerMention: String, mergerRaw: String,
+                                       senderMention: String, senderRaw: String)
+            : TextMessage {
+        val message = Attachment(
+                fallback = "PR #${pr.number} fast-track from $mergerRaw approved by $senderRaw, see ${pr.html_url}",
+                color = "good",
+                pretext = ":white_check_mark: Looks like $senderMention reviewed after fast-track of " +
+                        "PR <${pr.html_url}|#${pr.number}> by $mergerMention :+1:",
+                title = "PR #${pr.number} \"${pr.title}\"",
+                title_link = pr.html_url,
+                fields = listOf(
+                        Field("Event", "Fast Track Reviewed", true),
+                        Field("Bot Action", "Removed Auto-Approve", true)
+                ),
+                footer = "PR was merged by @$mergerRaw and label was removed by @$senderRaw"
         )
         return TextMessage(null, listOf(message))
     }
@@ -136,9 +208,11 @@ class FastTrackService(val ghProps: GitHubProperties, val slackBot: SlackBot) {
             return fastTrack(event, repo)
         }
 
-        if (event.action == "unlabeled" && event.label?.name == repo.watchedLabel
-                && event.pull_request.merged_by == null) {
-            return cancelFastTrack(event, repo)
+        if (event.action == "unlabeled" && event.label?.name == repo.watchedLabel) {
+            return if (ghProps.noCancel || event.pull_request.merged_by != null)
+                reviewedFastTrack(event, repo)
+            else
+                cancelFastTrack(event, repo)
         }
 
         return ServerResponse.noContent().build()

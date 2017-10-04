@@ -8,6 +8,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties("github")
 class GitHubProperties {
 
+    var botUsername: String? = "INVALID"
+    var token: String? = "INVALID"
+    var noCancel: Boolean = false
+
     val repos: MutableMap<String, Repo> = mutableMapOf()
 
     class Repo {
