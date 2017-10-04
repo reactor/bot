@@ -1,0 +1,9 @@
+{
+  "build": {
+    "type": "gradle",
+    "goal": "assemble"
+  },
+  "deploy": {
+    "jarName": "build/libs/reactor-bot-0.0.1-SNAPSHOT.jar"
+  }
+}
