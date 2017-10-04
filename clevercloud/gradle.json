@@ -1,5 +1,0 @@
-{
-  "deploy": {
-    "goal": "bootRun"
-  }
-}
