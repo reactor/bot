@@ -14,12 +14,12 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.bodyToFlux
 import org.springframework.web.reactive.function.client.bodyToMono
 import org.springframework.web.reactive.function.server.ServerResponse
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.publisher.toMono
-import java.lang.IndexOutOfBoundsException
 import java.net.URLEncoder
 
 /**
@@ -38,21 +38,24 @@ class FastTrackService(val ghProps: GitHubProperties,
         val EVENT_FAST_TRACK_REVIEWED = "Fast Track Reviewed"
     }
 
-    protected fun dismissBotReview(event: PrUpdate, repo: Repo): Mono<ClientResponse> {
+    protected fun getBotReviews(event: PrUpdate, repo: Repo, state: String = "APPROVED"): Flux<ResponseReview> {
         return client.get()
                 .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
                 .retrieve()
                 .bodyToMono<Array<ResponseReview>>()
                 .flatMapMany { Flux.fromArray(it) }
-                .filter { it.user.login == ghProps.botUsername && it.state == "APPROVED" }
-                .singleOrEmpty()
-                .onErrorMap(IndexOutOfBoundsException::class.java) { IllegalStateException("Found more than one APPROVED bot review!", it) }
+                .filter { it.user.login == ghProps.botUsername && it.state == state }
+    }
+
+    protected fun dismissBotReviews(event: PrUpdate, repo: Repo): Mono<ClientResponse> {
+        return getBotReviews(event, repo)
                 .doOnNext { LOG.debug("Dismissing review ${it.html_url}") }
-                .flatMap { client.put()
+                .flatMapDelayError({ client.put()
                         .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews/${it.id}/dismissals")
                         .syncBody("{\"message\": \"Fast-track cancelled by @${event.sender.login}\"}")
                         .exchange()
-                }
+                }, 5, 5)
+                .ignoreElements()
     }
 
     protected fun cancelFastTrack(event: PrUpdate, repo: Repo): Mono<ServerResponse> {
@@ -62,7 +65,7 @@ class FastTrackService(val ghProps: GitHubProperties,
         val senderId = repo.maintainers[sender]
         val senderNotif = if (senderId == null) sender else "<@$senderId>"
 
-        return dismissBotReview(event, repo)
+        return dismissBotReviews(event, repo)
                 .map { msgCancelFastTrack(pr, senderNotif, sender) }
                 .doOnError { LOG.error("GitHub error during $EVENT_FAST_TRACK_CANCELLED", it) }
                 .onErrorResume { msgGithubError(pr, EVENT_FAST_TRACK_CANCELLED, it).toMono() }
@@ -80,7 +83,7 @@ class FastTrackService(val ghProps: GitHubProperties,
         val mergerId = repo.maintainers[merger]
         val mergerNotif = if (mergerId == null) merger else "<@$mergerId>"
 
-        return dismissBotReview(event, repo)
+        return dismissBotReviews(event, repo)
                 .map { msgReviewedFastTrack(pr, mergerNotif, merger, senderNotif, sender) }
                 .doOnError { LOG.error("GitHub error during $EVENT_FAST_TRACK_REVIEWED", it) }
                 .onErrorResume { msgGithubError(pr, EVENT_FAST_TRACK_REVIEWED, it).toMono() }
@@ -219,11 +222,15 @@ class FastTrackService(val ghProps: GitHubProperties,
             )
         }
 
-        return client.post()
-                .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
-                .syncBody("{\"body\": \"Fast-track requested by @${event.sender.login}\", \"event\": \"APPROVE\"}")
-                .retrieve()
-                .bodyToMono<ResponseReview>()
+        return getBotReviews(event, repo)
+                .switchIfEmpty { client.post()
+                        .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
+                        .syncBody("{\"body\": \"Fast-track requested by @${event.sender.login}\", \"event\": \"APPROVE\"}")
+                        .retrieve()
+                        .bodyToFlux<ResponseReview>()
+                }
+                .takeLast(1)
+                .singleOrEmpty()
                 .map { msgFastTrackApproved(pr, repo, it, senderNotify, otherNotify, sender) }
                 .doOnError { LOG.error("GitHub error during $EVENT_FAST_TRACK", it) }
                 .onErrorResume { msgGithubError(pr, EVENT_FAST_TRACK, it).toMono() }
