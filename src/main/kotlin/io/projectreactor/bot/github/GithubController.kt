@@ -15,9 +15,7 @@ import reactor.core.publisher.Mono
 @RestController
 class GithubController(val fastTrackService: FastTrackService) {
 
-    @PostMapping("/gh/pr",
-            consumes = arrayOf(MediaType.APPLICATION_JSON_VALUE),
-            produces = arrayOf(MediaType.APPLICATION_JSON_VALUE))
+    @PostMapping("/gh/pr", consumes = arrayOf(MediaType.APPLICATION_JSON_VALUE))
     fun prHook(@RequestBody event: PrUpdate): Mono<ServerResponse> {
         val repo = fastTrackService.findRepo(event.repository) ?:
                 return ServerResponse.noContent().build()
