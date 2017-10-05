@@ -15,8 +15,23 @@ import reactor.core.publisher.Mono
 @RestController
 class GithubController(val fastTrackService: FastTrackService) {
 
-    @PostMapping("/gh/pr", consumes = arrayOf(MediaType.APPLICATION_JSON_VALUE))
-    fun prHook(@RequestBody body: PrUpdate): Mono<ServerResponse> =
-            fastTrackService.process(body)
+    @PostMapping("/gh/pr",
+            consumes = arrayOf(MediaType.APPLICATION_JSON_VALUE),
+            produces = arrayOf(MediaType.APPLICATION_JSON_VALUE))
+    fun prHook(@RequestBody event: PrUpdate): Mono<ServerResponse> {
+        val repo = fastTrackService.findRepo(event.repository) ?:
+                return ServerResponse.noContent().build()
+
+        if (event.action == "labeled" && event.label?.name == repo.watchedLabel) {
+            return fastTrackService.fastTrack(event, repo)
+        }
+
+        if (event.action == "unlabeled" && event.label?.name == repo.watchedLabel) {
+            return fastTrackService.unfastTrack(event, repo)
+        }
+
+        return ServerResponse.noContent().build()
+
+    }
 
 }
