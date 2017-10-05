@@ -39,22 +39,25 @@ class FastTrackService(val ghProps: GitHubProperties,
     }
 
     protected fun getBotReviews(event: PrUpdate, repo: Repo, state: String = "APPROVED"): Flux<ResponseReview> {
+        LOG.debug("Getting bot reviews")
         return client.get()
                 .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
                 .retrieve()
                 .bodyToMono<Array<ResponseReview>>()
                 .flatMapMany { Flux.fromArray(it) }
+                .doOnNext { LOG.trace("Got review $it") }
                 .filter { it.user.login == ghProps.botUsername && it.state == state }
+                .doOnNext { LOG.debug("Found bot review $it") }
     }
 
     protected fun dismissBotReviews(event: PrUpdate, repo: Repo): Mono<ClientResponse> {
         return getBotReviews(event, repo)
-                .doOnNext { LOG.debug("Dismissing review ${it.html_url}") }
-                .flatMapDelayError({ client.put()
+                .doOnNext { LOG.debug("Dismissing bot review ${it.html_url}") }
+                .concatMapDelayError({ client.put()
                         .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews/${it.id}/dismissals")
                         .syncBody("{\"message\": \"Fast-track cancelled by @${event.sender.login}\"}")
                         .exchange()
-                }, 5, 5)
+                },5)
                 .ignoreElements()
     }
 
@@ -65,11 +68,14 @@ class FastTrackService(val ghProps: GitHubProperties,
         val senderId = repo.maintainers[sender]
         val senderNotif = if (senderId == null) sender else "<@$senderId>"
 
+        LOG.debug("Cancelling fast track of ${repo.org}/${repo.repo}#${pr.number}")
+
         return dismissBotReviews(event, repo)
-                .map { msgCancelFastTrack(pr, senderNotif, sender) }
+                .then(msgCancelFastTrack(pr, senderNotif, sender).toMono())
                 .doOnError { LOG.error("GitHub error during $EVENT_FAST_TRACK_CANCELLED", it) }
                 .onErrorResume { msgGithubError(pr, EVENT_FAST_TRACK_CANCELLED, it).toMono() }
                 .flatMap { slackBot.sendMessage(it) }
+                .doOnSuccess { LOG.debug("Done: Cancelling fast track of ${repo.org}/${repo.repo}#${pr.number}") }
     }
 
     protected fun reviewedFastTrack(event: PrUpdate, repo: Repo): Mono<ServerResponse> {
@@ -83,11 +89,14 @@ class FastTrackService(val ghProps: GitHubProperties,
         val mergerId = repo.maintainers[merger]
         val mergerNotif = if (mergerId == null) merger else "<@$mergerId>"
 
+        LOG.debug("Reviewing fast track of ${repo.org}/${repo.repo}#${pr.number}")
+
         return dismissBotReviews(event, repo)
-                .map { msgReviewedFastTrack(pr, mergerNotif, merger, senderNotif, sender) }
+                .then(msgReviewedFastTrack(pr, mergerNotif, merger, senderNotif, sender).toMono())
                 .doOnError { LOG.error("GitHub error during $EVENT_FAST_TRACK_REVIEWED", it) }
                 .onErrorResume { msgGithubError(pr, EVENT_FAST_TRACK_REVIEWED, it).toMono() }
                 .flatMap { slackBot.sendMessage(it) }
+                .doOnSuccess { LOG.debug("Done: Reviewing fast track of ${repo.org}/${repo.repo}#${pr.number}") }
     }
 
     protected fun msgFastTrackNotPossible(pr: PullRequest, repo: Repo,
@@ -217,24 +226,29 @@ class FastTrackService(val ghProps: GitHubProperties,
                 .joinToString(", ")
 
         if (!repo.maintainers.containsKey(author)) {
+            LOG.debug("Fast track of ${repo.org}/${repo.repo}#${pr.number}: not a maintainer")
+
             return slackBot.sendMessage(
                     msgFastTrackNotPossible(pr, repo, senderNotify, sender, author)
             )
         }
 
+        LOG.debug("Fast track of ${repo.org}/${repo.repo}#${pr.number}")
         return getBotReviews(event, repo)
-                .switchIfEmpty { client.post()
+                .switchIfEmpty(client.post()
                         .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
                         .syncBody("{\"body\": \"Fast-track requested by @${event.sender.login}\", \"event\": \"APPROVE\"}")
                         .retrieve()
                         .bodyToFlux<ResponseReview>()
-                }
-                .takeLast(1)
-                .singleOrEmpty()
+                        .doOnSubscribe { LOG.debug("No current review, creating one") }
+                )
+                .single()
+                .doOnNext { LOG.trace("Bot Review: $it") }
                 .map { msgFastTrackApproved(pr, repo, it, senderNotify, otherNotify, sender) }
                 .doOnError { LOG.error("GitHub error during $EVENT_FAST_TRACK", it) }
                 .onErrorResume { msgGithubError(pr, EVENT_FAST_TRACK, it).toMono() }
                 .flatMap { slackBot.sendMessage(it) }
+                .doOnSuccess { LOG.debug("Done: Fast track of ${repo.org}/${repo.repo}#${pr.number}") }
     }
 
     fun unfastTrack(event: PrUpdate, repo: Repo) : Mono<ServerResponse> =

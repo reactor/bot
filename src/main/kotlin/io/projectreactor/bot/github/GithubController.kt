@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.reactive.function.server.ServerResponse
 import reactor.core.publisher.Mono
+import java.time.Duration
 
 /**
  * @author Simon Baslé
@@ -22,10 +23,12 @@ class GithubController(val fastTrackService: FastTrackService) {
 
         if (event.action == "labeled" && event.label?.name == repo.watchedLabel) {
             return fastTrackService.fastTrack(event, repo)
+                    .timeout(Duration.ofSeconds(4))
         }
 
         if (event.action == "unlabeled" && event.label?.name == repo.watchedLabel) {
             return fastTrackService.unfastTrack(event, repo)
+                    .timeout(Duration.ofSeconds(4))
         }
 
         return ServerResponse.noContent().build()
