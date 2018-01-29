@@ -25,7 +25,7 @@ class BotConfiguration {
     fun githubClient(props: GitHubProperties): WebClient {
         return WebClient.builder()
                 .baseUrl("https://api.github.com/")
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Basic ${props.token}")
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "token ${props.token}")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build()
     }
