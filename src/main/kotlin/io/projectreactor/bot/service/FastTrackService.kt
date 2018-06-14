@@ -13,10 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.client.ClientResponse
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToFlux
-import org.springframework.web.reactive.function.client.bodyToMono
+import org.springframework.web.reactive.function.client.*
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.publisher.toMono
@@ -38,7 +35,7 @@ class FastTrackService(val ghProps: GitHubProperties,
         val EVENT_FAST_TRACK_REVIEWED = "Fast Track Reviewed"
     }
 
-    protected fun getBotReviews(event: PrUpdate, repo: Repo, state: String = "APPROVED"): Flux<ResponseReview> {
+    protected fun getBotReviews(event: PrUpdate, repo: Repo, all: Boolean = false): Flux<ResponseReview> {
         LOG.debug("Getting bot reviews")
         return client.get()
                 .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
@@ -46,17 +43,24 @@ class FastTrackService(val ghProps: GitHubProperties,
                 .bodyToMono<Array<ResponseReview>>()
                 .flatMapMany { Flux.fromArray(it) }
                 .doOnNext { LOG.trace("Got review $it") }
-                .filter { it.user.login == ghProps.botUsername && it.state == state }
+                .filter { it.user.login == ghProps.botUsername && (all || it.state == "APPROVED") }
                 .doOnNext { LOG.debug("Found bot review $it") }
     }
 
     protected fun dismissBotReviews(event: PrUpdate, repo: Repo): Mono<ClientResponse> {
-        return getBotReviews(event, repo)
-                .doOnNext { LOG.debug("Dismissing bot review ${it.html_url}") }
-                .concatMapDelayError({ client.put()
-                        .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews/${it.id}/dismissals")
-                        .syncBody("{\"message\": \"Fast-track cancelled by @${event.sender.login}\"}")
-                        .exchange()
+        return getBotReviews(event, repo, true)
+                .concatMapDelayError( { review ->
+                    if (review.state == "PENDING")
+                        client.delete()
+                                .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews/${review.id}")
+                                .exchange()
+                                .doOnSubscribe { LOG.debug("Deleting PENDING bot review ${review.html_url}") }
+                    else
+                        client.put()
+                                .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews/${review.id}/dismissals")
+                                .syncBody("{\"message\": \"Fast-track cancelled by @${event.sender.login}\"}")
+                                .exchange()
+                                .doOnSubscribe { LOG.debug("Dismissing bot review ${review.html_url}") }
                 },5)
                 .ignoreElements()
     }
@@ -253,7 +257,7 @@ class FastTrackService(val ghProps: GitHubProperties,
 
         LOG.trace("$reviewUri\n$reviewPayload")
 
-        return getBotReviews(event, repo)
+        return getBotReviews(event, repo, true)
                 .switchIfEmpty(client.post()
                         .uri(reviewUri)
                         .syncBody(reviewPayload)
