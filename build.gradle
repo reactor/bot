@@ -1,7 +1,7 @@
 buildscript {
 	ext {
-		kotlinVersion = '1.2.0'
-		springBootVersion = '2.0.0.M7'
+		kotlinVersion = '1.2.41'
+		springBootVersion = '2.0.2.RELEASE'
 		propDepsVersion = '0.0.9.RELEASE'
 	}
 	repositories {
@@ -29,7 +29,7 @@ apply plugin: 'propdeps-idea'
 apply plugin: 'propdeps-eclipse'
 
 group = 'io.projectreactor'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.2-SNAPSHOT'
 sourceCompatibility = 1.8
 compileKotlin {
 	kotlinOptions.jvmTarget = "1.8"
@@ -47,7 +47,7 @@ repositories {
 
 dependencies {
 	compile('org.springframework.boot:spring-boot-starter-webflux')
-	compile("org.jetbrains.kotlin:kotlin-stdlib-jre8:${kotlinVersion}")
+	compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
 	compile("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
   	compile("com.fasterxml.jackson.module:jackson-module-kotlin")
 	testCompile('org.springframework.boot:spring-boot-starter-test')
