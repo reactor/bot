@@ -7,10 +7,11 @@ import io.projectreactor.bot.github.data.Organization
 import io.projectreactor.bot.github.data.PrUpdate
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.server.ServerResponse
 import reactor.core.publisher.Mono
+import reactor.core.publisher.toMono
 
 /**
  * @author Simon Baslé
@@ -29,7 +30,7 @@ class CommentService(val ghProps: GitHubProperties,
         val FAST_TRACK_PREFIX = "fast track"
     }
 
-    fun parseCommand(command: String, event: CommentEvent, repo: Repo): Mono<ServerResponse> {
+    fun parseCommand(command: String, event: CommentEvent, repo: Repo): Mono<ResponseEntity<String>> {
         when {
             command.startsWith(LABEL_PREFIX) -> return label(command.removePrefix(LABEL_PREFIX), event, repo)
             command.startsWith(ASSIGN_PREFIX) -> return assignToAuthor(event, repo)
@@ -53,15 +54,15 @@ class CommentService(val ghProps: GitHubProperties,
                 else
                     fastTrackService.fastTrack(prEvent, repo, msg)
             }
-            else -> return ServerResponse.noContent().build()
+            else -> return ResponseEntity.noContent().build<String>().toMono()
         }
     }
 
-    protected fun label(label: String, event: CommentEvent, repo: Repo): Mono<ServerResponse> {
-        return ServerResponse.noContent().build()
+    protected fun label(label: String, event: CommentEvent, repo: Repo): Mono<ResponseEntity<String>> {
+        return ResponseEntity.noContent().build<String>().toMono()
     }
 
-    protected fun assignToAuthor(event: CommentEvent, repo: Repo): Mono<ServerResponse> {
-        return ServerResponse.noContent().build()
+    protected fun assignToAuthor(event: CommentEvent, repo: Repo): Mono<ResponseEntity<String>> {
+        return ResponseEntity.noContent().build<String>().toMono()
     }
 }
