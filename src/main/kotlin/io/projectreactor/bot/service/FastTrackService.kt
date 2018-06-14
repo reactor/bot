@@ -240,12 +240,23 @@ class FastTrackService(val ghProps: GitHubProperties,
         }
 
         LOG.debug("Fast track of ${repo.org}/${repo.repo}#${pr.number}")
+
+        val reviewPayload = if (!msg.isNullOrBlank())
+            "{\"body\": \"Fast-track requested by @${event.sender.login} " +
+                    "with message: $msg\", \"event\": \"APPROVE\"}"
+        else
+            "{\"body\": \"Fast-track requested by @${event.sender.login}\", " +
+                    "\"event\": \"APPROVE\"}"
+
+        val reviewUri = "/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews"
+
+
+        LOG.trace("$reviewUri\n$reviewPayload")
+
         return getBotReviews(event, repo)
                 .switchIfEmpty(client.post()
-                        .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
-                        .syncBody("{\"body\": \"Fast-track requested by @${event.sender.login}"
-                                + (if (!msg.isNullOrBlank()) " with message: $msg" else "")
-                                + "\", \"event\": \"APPROVE\"}")
+                        .uri(reviewUri)
+                        .syncBody(reviewPayload)
                         .retrieve()
                         .bodyToFlux<ResponseReview>()
                         .doOnSubscribe { LOG.debug("No current review, creating one") }
