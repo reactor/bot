@@ -193,6 +193,9 @@ class FastTrackService(val ghProps: GitHubProperties,
     }
 
     protected fun msgGithubError(pr: PullRequest, eventType: String, error: Throwable) : TextMessage {
+        val errorDetail = if (error !is WebClientResponseException) error.toString()
+        else "$error\n${error.responseBodyAsString}"
+
         val message = Attachment(
                 fallback = "Error during $eventType while using GitHub API",
                 color = "danger",
@@ -202,7 +205,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                 fields = listOf(
                         Field("Event", eventType, true),
                         Field("Bot Action", "Logged GitHub error", true),
-                        Field("Error Details", error.toString())
+                        Field("Error Details", errorDetail)
                 )
         )
         return TextMessage(null, listOf(message))
@@ -254,7 +257,6 @@ class FastTrackService(val ghProps: GitHubProperties,
 
         val reviewUri = "/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews"
 
-
         LOG.trace("$reviewUri\n$reviewPayload")
 
         return getBotReviews(event, repo, true)
@@ -268,7 +270,14 @@ class FastTrackService(val ghProps: GitHubProperties,
                 .single()
                 .doOnNext { LOG.trace("Bot Review: $it") }
                 .map { msgFastTrackApproved(pr, repo, it, senderNotify, otherNotify, sender) }
-                .doOnError { LOG.error("GitHub error during $EVENT_FAST_TRACK", it) }
+                .doOnError {
+                    if (it is WebClientResponseException) {
+                        LOG.error("GitHub error during $EVENT_FAST_TRACK: ${it.message}" +
+                                "\n${it.responseBodyAsString}")
+                    }
+                    else
+                        LOG.error("GitHub error during $EVENT_FAST_TRACK: ${it.message}")
+                }
                 .onErrorResume { msgGithubError(pr, EVENT_FAST_TRACK, it).toMono() }
                 .flatMap { slackBot.sendMessage(it) }
                 .doOnSuccess { LOG.debug("Done: Fast track of ${repo.org}/${repo.repo}#${pr.number}") }
