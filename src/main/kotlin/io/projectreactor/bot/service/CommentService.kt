@@ -30,27 +30,32 @@ class CommentService(val ghProps: GitHubProperties,
     }
 
     fun parseCommand(command: String, event: CommentEvent, repo: Repo): Mono<ServerResponse> {
-        if (command.startsWith(LABEL_PREFIX)) {
-            return label(command.removePrefix(LABEL_PREFIX), event, repo)
-        }
-        else if (command.startsWith(ASSIGN_PREFIX)) {
-            return assignToAuthor(event, repo)
-        }
-        else if (command.startsWith(FAST_TRACK_PREFIX)) {
-            val msg = command
-                    .removePrefix(FAST_TRACK_PREFIX)
-                    .trimStart()
+        when {
+            command.startsWith(LABEL_PREFIX) -> return label(command.removePrefix(LABEL_PREFIX), event, repo)
+            command.startsWith(ASSIGN_PREFIX) -> return assignToAuthor(event, repo)
+            command.startsWith(FAST_TRACK_PREFIX) -> {
+                val msg = command
+                        .removePrefix(FAST_TRACK_PREFIX)
+                        .trimStart()
 
-            val prEvent = PrUpdate("labeled", event.issue.number,
-                    event.issue,
-                    event.repository,
-                    Organization(repo.org),
-                    null,
-                    event.comment.user)
+                val deleted = event.action == "deleted"
 
-            return fastTrackService.fastTrack(prEvent, repo, msg)
+                val prEvent = PrUpdate(
+                        if (deleted) "unlabeled" else "labeled",
+                        event.issue.number,
+                        event.issue,
+                        event.repository,
+                        Organization(repo.org),
+                        null,
+                        event.comment.user)
+
+                return if (deleted)
+                    fastTrackService.unfastTrack(prEvent, repo)
+                else
+                    fastTrackService.fastTrack(prEvent, repo, msg)
+            }
+            else -> return ServerResponse.noContent().build()
         }
-        else return ServerResponse.noContent().build()
     }
 
     protected fun label(label: String, event: CommentEvent, repo: Repo): Mono<ServerResponse> {
