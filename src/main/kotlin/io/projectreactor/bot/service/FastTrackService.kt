@@ -213,11 +213,17 @@ class FastTrackService(val ghProps: GitHubProperties,
                 .orElse(null)
     }
 
-    fun fastTrack(event: PrUpdate, repo: Repo): Mono<ServerResponse> {
+    fun fastTrack(event: PrUpdate, repo: Repo, msg: String? = null): Mono<ServerResponse> {
         val pr = event.pull_request
         val author = pr.author.login
         val sender = event.sender.login
         val senderId = repo.maintainers[sender]
+
+        if (sender == ghProps.botUsername) {
+            //ignore fast track labels put by the bot itself
+            LOG.trace("Fast track label set by bot, ignored")
+            return ServerResponse.noContent().build()
+        }
 
         val senderNotify = if (senderId == null) sender else "<@$senderId>"
         val otherNotify = repo.maintainers
@@ -237,7 +243,9 @@ class FastTrackService(val ghProps: GitHubProperties,
         return getBotReviews(event, repo)
                 .switchIfEmpty(client.post()
                         .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
-                        .syncBody("{\"body\": \"Fast-track requested by @${event.sender.login}\", \"event\": \"APPROVE\"}")
+                        .syncBody("{\"body\": \"Fast-track requested by @${event.sender.login}"
+                                + if (!msg.isNullOrBlank()) " with message: $msg" else ""
+                                + "\", \"event\": \"APPROVE\"}")
                         .retrieve()
                         .bodyToFlux<ResponseReview>()
                         .doOnSubscribe { LOG.debug("No current review, creating one") }
