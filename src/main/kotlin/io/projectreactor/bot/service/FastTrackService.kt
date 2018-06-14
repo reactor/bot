@@ -244,7 +244,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                 .switchIfEmpty(client.post()
                         .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews")
                         .syncBody("{\"body\": \"Fast-track requested by @${event.sender.login}"
-                                + if (!msg.isNullOrBlank()) " with message: $msg" else ""
+                                + (if (!msg.isNullOrBlank()) " with message: $msg" else "")
                                 + "\", \"event\": \"APPROVE\"}")
                         .retrieve()
                         .bodyToFlux<ResponseReview>()
