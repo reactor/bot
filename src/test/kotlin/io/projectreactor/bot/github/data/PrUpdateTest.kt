@@ -30,11 +30,10 @@ class PrUpdateTest {
                 null,null,
                 "CONTRIBUTOR")
         val expectedRepo = Repository("reactor-core", "reactor/reactor-core")
-        val expectedOrg = Organization("reactor")
         val expectedSender = User("simonbasle")
         val expectedLabel = Label("PR-fast-track", "f49b42")
         val expected = PrUpdate("unlabeled", 886, expectedPr,
-                expectedRepo, expectedOrg, expectedLabel, expectedSender)
+                expectedRepo, expectedLabel, expectedSender)
 
         val pr = objectMapper?.readValue<PrUpdate>(json)
 

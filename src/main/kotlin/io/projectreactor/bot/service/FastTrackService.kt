@@ -11,12 +11,12 @@ import io.projectreactor.bot.slack.data.Field
 import io.projectreactor.bot.slack.data.TextMessage
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToFlux
 import org.springframework.web.reactive.function.client.bodyToMono
-import org.springframework.web.reactive.function.server.ServerResponse
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.publisher.toMono
@@ -61,7 +61,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                 .ignoreElements()
     }
 
-    protected fun cancelFastTrack(event: PrUpdate, repo: Repo): Mono<ServerResponse> {
+    protected fun cancelFastTrack(event: PrUpdate, repo: Repo): Mono<ResponseEntity<String>> {
         val pr = event.pull_request
         val sender = event.sender.login
 
@@ -78,7 +78,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                 .doOnSuccess { LOG.debug("Done: Cancelling fast track of ${repo.org}/${repo.repo}#${pr.number}") }
     }
 
-    protected fun reviewedFastTrack(event: PrUpdate, repo: Repo): Mono<ServerResponse> {
+    protected fun reviewedFastTrack(event: PrUpdate, repo: Repo): Mono<ResponseEntity<String>> {
         val pr = event.pull_request
         val sender = event.sender.login
         val merger = event.pull_request.merged_by?.login ?: "unknown"
@@ -213,7 +213,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                 .orElse(null)
     }
 
-    fun fastTrack(event: PrUpdate, repo: Repo, msg: String? = null): Mono<ServerResponse> {
+    fun fastTrack(event: PrUpdate, repo: Repo, msg: String? = null): Mono<ResponseEntity<String>> {
         val pr = event.pull_request
         val author = pr.author.login
         val sender = event.sender.login
@@ -222,7 +222,7 @@ class FastTrackService(val ghProps: GitHubProperties,
         if (sender == ghProps.botUsername) {
             //ignore fast track labels put by the bot itself
             LOG.trace("Fast track label set by bot, ignored")
-            return ServerResponse.noContent().build()
+            return ResponseEntity.noContent().build<String>().toMono()
         }
 
         val senderNotify = if (senderId == null) sender else "<@$senderId>"
@@ -270,7 +270,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                 .doOnSuccess { LOG.debug("Done: Fast track of ${repo.org}/${repo.repo}#${pr.number}") }
     }
 
-    fun unfastTrack(event: PrUpdate, repo: Repo) : Mono<ServerResponse> =
+    fun unfastTrack(event: PrUpdate, repo: Repo) : Mono<ResponseEntity<String>> =
             if (ghProps.noCancel || event.pull_request.merged_by != null)
                 reviewedFastTrack(event, repo)
             else

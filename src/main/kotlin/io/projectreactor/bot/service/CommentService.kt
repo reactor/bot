@@ -45,7 +45,6 @@ class CommentService(val ghProps: GitHubProperties,
                         event.issue.number,
                         event.issue,
                         event.repository,
-                        Organization(repo.org),
                         null,
                         event.comment.user)
 
