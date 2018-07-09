@@ -5,6 +5,7 @@ import io.projectreactor.bot.github.data.CommentEvent
 import io.projectreactor.bot.github.data.PrUpdate
 import io.projectreactor.bot.service.CommentService
 import io.projectreactor.bot.service.FastTrackService
+import io.projectreactor.bot.service.IssueService
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -20,6 +21,7 @@ import java.time.Duration
 @RestController
 class GithubController(val fastTrackService: FastTrackService,
                        val commentService: CommentService,
+                       val issueService: IssueService,
                        val ghProps: GitHubProperties) {
 
     @PostMapping("/gh/pr", consumes = arrayOf(MediaType.APPLICATION_JSON_VALUE))
@@ -35,6 +37,13 @@ class GithubController(val fastTrackService: FastTrackService,
         if (event.action == "unlabeled" && event.label?.name == repo.watchedLabel) {
             return fastTrackService.unfastTrack(event, repo)
                     .timeout(Duration.ofSeconds(4))
+        }
+
+        if (event.action == "closed" && event.pull_request.merged && event.pull_request.base.ref != "master" ) {
+            return issueService.label(repo.forwardLabel, event.pull_request, repo)
+                    .then(issueService.comment("@${event.pull_request.author.login} this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to `master` :bow:",
+                                event.pull_request, repo))
+                    .map { ResponseEntity.status(it.statusCode).body(it.body!!.toString()) }
         }
 
         return return ResponseEntity.noContent().build<String>().toMono()
