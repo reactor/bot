@@ -18,6 +18,7 @@ class GitHubProperties {
         var org: String = "INVALID"
         var repo: String = "INVALID"
         var watchedLabel: String = "INVALID"
+        var forwardLabel: String = "INVALID"
         var maintainers: MutableMap<String, String> = mutableMapOf()
     }
 }
