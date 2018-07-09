@@ -29,7 +29,7 @@ apply plugin: 'propdeps-idea'
 apply plugin: 'propdeps-eclipse'
 
 group = 'io.projectreactor'
-version = '0.0.2-SNAPSHOT'
+version = '0.0.3-SNAPSHOT'
 sourceCompatibility = 1.8
 compileKotlin {
 	kotlinOptions.jvmTarget = "1.8"
