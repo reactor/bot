@@ -27,8 +27,9 @@ class PrUpdateTest {
         val expectedPr = PullRequest(
                 "https://github.com/reactor/reactor-core/pull/886", 886,
                 "open", "Another proofreading pass", User("Buzzardo"),
-                null,null,
-                "CONTRIBUTOR")
+                false,null,null,
+                "CONTRIBUTOR",
+                GitRef("reactor:master", "master","c2111862dd0087c1da9be181c4e0284d74a8f858"))
         val expectedRepo = Repository("reactor-core", "reactor/reactor-core")
         val expectedSender = User("simonbasle")
         val expectedLabel = Label("PR-fast-track", "f49b42")
