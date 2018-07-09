@@ -4,6 +4,6 @@
     "goal": "assemble"
   },
   "deploy": {
-    "jarName": "build/libs/reactor-bot-0.0.2-SNAPSHOT.jar"
+    "jarName": "build/libs/reactor-bot-0.0.3-SNAPSHOT.jar"
   }
 }
