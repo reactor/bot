@@ -31,4 +31,20 @@ class PullRequestTest {
 
         Assertions.assertThat(pr).isEqualTo(expected)
     }
+
+    @Test
+    fun deserializesNoBase() {
+        val json = this.javaClass::class.java.getResource("/prNoBase.json").readText()
+        val expected = PullRequest(
+                "https://github.com/reactor/reactor-core/pull/886", 886,
+                "open", "Another proofreading pass", User("Buzzardo"),
+                false, null,null,
+                "CONTRIBUTOR",
+                base = null
+        )
+
+        val pr = objectMapper?.readValue<PullRequest>(json)
+
+        Assertions.assertThat(pr).isEqualTo(expected)
+    }
 }

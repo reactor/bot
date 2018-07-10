@@ -25,4 +25,4 @@ data class PullRequest(val html_url: String,
                        val merged_at: LocalDateTime? = null,
                        val merged_by: User? = null,
                        val author_association: String,
-                       val base: GitRef) : IssueOrPr()
+                       val base: GitRef? = null) : IssueOrPr()

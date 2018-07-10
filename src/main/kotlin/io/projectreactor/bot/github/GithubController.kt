@@ -39,7 +39,7 @@ class GithubController(val fastTrackService: FastTrackService,
                     .timeout(Duration.ofSeconds(4))
         }
 
-        if (event.action == "closed" && event.pull_request.merged && event.pull_request.base.ref != "master" ) {
+        if (event.action == "closed" && event.pull_request.merged && event.pull_request.base?.ref != "master" ) {
             return issueService.label(repo.forwardLabel, event.pull_request, repo)
                     .then(issueService.comment("@${event.pull_request.author.login} this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to `master` :bow:",
                                 event.pull_request, repo))
