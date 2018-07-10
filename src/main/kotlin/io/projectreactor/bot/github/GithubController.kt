@@ -24,7 +24,7 @@ class GithubController(val fastTrackService: FastTrackService,
                        val issueService: IssueService,
                        val ghProps: GitHubProperties) {
 
-    @PostMapping("/gh/pr", consumes = arrayOf(MediaType.APPLICATION_JSON_VALUE))
+    @PostMapping("/gh/pr", consumes = [(MediaType.APPLICATION_JSON_VALUE)])
     fun prHook(@RequestBody event: PrUpdate): Mono<ResponseEntity<String>> {
         val repo = fastTrackService.findRepo(event.repository) ?:
                 return ResponseEntity.noContent().build<String>().toMono()
@@ -40,16 +40,18 @@ class GithubController(val fastTrackService: FastTrackService,
         }
 
         if (event.action == "closed" && event.pull_request.merged && event.pull_request.base?.ref != "master" ) {
-            return issueService.label(repo.forwardLabel, event.pull_request, repo)
-                    .then(issueService.comment("@${event.pull_request.author.login} this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to `master` :bow:",
-                                event.pull_request, repo))
-                    .map { ResponseEntity.status(it.statusCode).body(it.body!!.toString()) }
+            return Mono.zip(
+                    issueService.label(repo.forwardLabel, event.pull_request, repo),
+                    issueService.comment("@${event.pull_request.author.login} this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to `master` :bow:",
+                                event.pull_request, repo)
+            )
+                    .map { ResponseEntity.ok(it?.toString() ?: "") }
         }
 
-        return return ResponseEntity.noContent().build<String>().toMono()
+        return ResponseEntity.noContent().build<String>().toMono()
     }
 
-    @PostMapping("/gh/comment", consumes = arrayOf(MediaType.APPLICATION_JSON_VALUE))
+    @PostMapping("/gh/comment", consumes = [(MediaType.APPLICATION_JSON_VALUE)])
     fun commentHook(@RequestBody event: CommentEvent): Mono<ResponseEntity<String>> {
         val repo = fastTrackService.findRepo(event.repository)
                 ?: return ResponseEntity.noContent().build<String>().toMono()
@@ -63,8 +65,6 @@ class GithubController(val fastTrackService: FastTrackService,
         return commentService.parseCommand(event.comment.body.removePrefix(prefix),
                 event, repo)
                 .timeout(Duration.ofSeconds(4))
-
-        return ResponseEntity.noContent().build<String>().toMono()
     }
 
 }

@@ -2,14 +2,11 @@ package io.projectreactor.bot.service
 
 import io.projectreactor.bot.config.GitHubProperties.Repo
 import io.projectreactor.bot.github.data.IssueOrPr
-import io.projectreactor.bot.github.data.ResponseLabel
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
-import org.springframework.web.reactive.function.client.bodyToFlux
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 
@@ -23,14 +20,14 @@ class IssueService(@Qualifier("githubClient") val client: WebClient) {
         val LOG = LoggerFactory.getLogger(IssueService::class.java)
     }
 
-    fun label(label: String, issue: IssueOrPr, repo: Repo): Mono<ResponseEntity<ResponseLabel>> {
+    fun label(label: String, issue: IssueOrPr, repo: Repo): Mono<String> {
         val owner = "${repo.org}/${repo.repo}"
         val number = issue.number
         return client.post()
                 .uri("/repos/$owner/issues/$number/labels")
                 .syncBody("[\"$label\"]")
                 .retrieve()
-                .bodyToMono<List<ResponseLabel>>()
+                .bodyToMono<String>()
                 .doOnSubscribe { LOG.debug("Applying label $label to ${repo.org}/${repo.repo}#${issue.number}") }
                 .doOnNext { FastTrackService.LOG.trace("Label details: $it") }
                 .doOnError {
@@ -42,10 +39,9 @@ class IssueService(@Qualifier("githubClient") val client: WebClient) {
                         FastTrackService.LOG.error("GitHub error applying label: ${it.message}")
                 }
                 .doOnSuccess { FastTrackService.LOG.debug("Done: Applying label") }
-                .map { ResponseEntity.ok(it[0]) }
     }
 
-    fun comment(comment: String, issue: IssueOrPr, repo: Repo): Mono<ResponseEntity<String>> {
+    fun comment(comment: String, issue: IssueOrPr, repo: Repo): Mono<String> {
         val owner = "${repo.org}/${repo.repo}"
         val number = issue.number
         return client.post()
@@ -63,6 +59,5 @@ class IssueService(@Qualifier("githubClient") val client: WebClient) {
                         FastTrackService.LOG.error("GitHub error commenting: ${it.message}")
                 }
                 .doOnSuccess { FastTrackService.LOG.debug("Done commenting") }
-                .map { ResponseEntity.ok(it) }
     }
 }
