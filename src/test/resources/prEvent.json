@@ -80,7 +80,7 @@
     "ssh_url": "git@github.com:reactor/reactor-core.git",
     "clone_url": "https://github.com/reactor/reactor-core.git",
     "svn_url": "https://github.com/reactor/reactor-core",
-    "homepage": "http://projectreactor.io",
+    "homepage": "https://projectreactor.io",
     "size": 44831,
     "stargazers_count": 975,
     "watchers_count": 975,
