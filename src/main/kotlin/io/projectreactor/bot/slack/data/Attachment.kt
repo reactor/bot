@@ -10,7 +10,7 @@ data class Attachment(
         val author_link: String? = null, //eg. "https://flickr.com/bobby/"
         val author_icon: String? = null, //eg. "https://flickr.com/icons/bobby.jpg"
         val text: String? = null, //Optional text that appears within the attachment
-        val image_url: String? = null, //eg "http://my-website.com/path/to/image.jpg"
+        val image_url: String? = null, //eg "https://my-website.com/path/to/image.jpg"
         val thumb_url: String? = null, //eg. "https://example.com/path/to/thumb.png"
         val footer: String? = null, //eg. "Slack API"
         val footer_icon: String? = null, //eg. "https://platform.slack-edge.com/img/default_application_icon.png"
