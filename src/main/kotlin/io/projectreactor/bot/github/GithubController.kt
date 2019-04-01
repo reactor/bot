@@ -39,10 +39,11 @@ class GithubController(val fastTrackService: FastTrackService,
                     .timeout(Duration.ofSeconds(4))
         }
 
-        if (event.action == "closed" && event.pull_request.merged && event.pull_request.base?.ref != "master" ) {
+        if (event.action == "closed" && event.pull_request.merged && event.pull_request.base != null
+                && event.pull_request.base.ref.endsWith(".x")) {
             return Mono.zip(
                     issueService.label(repo.forwardLabel, event.pull_request, repo),
-                    issueService.comment("@${event.pull_request.author.login} this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to `master` :bow:",
+                    issueService.comment("@${event.pull_request.author.login} this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to intermediate maintenance branches and up to `master` :bow:",
                                 event.pull_request, repo)
             )
                     .map { ResponseEntity.ok(it?.toString() ?: "") }
