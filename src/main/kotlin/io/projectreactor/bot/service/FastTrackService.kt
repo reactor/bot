@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.*
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.core.publisher.toMono
+import reactor.kotlin.core.publisher.toMono
 import java.net.URLEncoder
 
 /**
@@ -58,7 +58,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                     else
                         client.put()
                                 .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews/${review.id}/dismissals")
-                                .syncBody("{\"message\": \"Fast-track cancelled by @${event.sender.login}\"}")
+                                .body("{\"message\": \"Fast-track cancelled by @${event.sender.login}\"}")
                                 .exchange()
                                 .doOnSubscribe { LOG.debug("Dismissing bot review ${review.html_url}") }
                 },5)
@@ -262,7 +262,7 @@ class FastTrackService(val ghProps: GitHubProperties,
         return getBotReviews(event, repo, true)
                 .switchIfEmpty(client.post()
                         .uri(reviewUri)
-                        .syncBody(reviewPayload)
+                        .body(reviewPayload)
                         .retrieve()
                         .bodyToFlux<ResponseReview>()
                         .doOnSubscribe { LOG.debug("No current review, creating one") }

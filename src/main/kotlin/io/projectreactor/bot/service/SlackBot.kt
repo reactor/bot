@@ -22,13 +22,13 @@ class SlackBot(@Qualifier("slackClient") private val client: WebClient) {
         return if (linkNames)
             client.post()
                     .attribute("link_names", 1)
-                    .syncBody(message)
+                    .body(message)
                     .exchange()
                     .doOnError { LOG.error("Error during SlackBot phase", it) }
                     .flatMap { it.toEntity(String::class.java) }
         else
             client.post()
-                    .syncBody(message)
+                    .body(message)
                     .exchange()
                     .doOnError { LOG.error("Error during SlackBot phase", it) }
                     .flatMap { it.toEntity(String::class.java) }

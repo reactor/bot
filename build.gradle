@@ -49,9 +49,9 @@ dependencies {
 	compile('org.springframework.boot:spring-boot-starter-webflux')
 	compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
 	compile("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
+	compile('io.projectreactor.kotlin:reactor-kotlin-extensions')
   	compile("com.fasterxml.jackson.module:jackson-module-kotlin")
 	testCompile('org.springframework.boot:spring-boot-starter-test')
-	testCompile('io.projectreactor.kotlin:reactor-kotlin-extensions')
 	testCompile('io.projectreactor:reactor-test')
 	optional "org.springframework.boot:spring-boot-configuration-processor"
 }
