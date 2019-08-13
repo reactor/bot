@@ -3,18 +3,21 @@ buildscript {
 		kotlinVersion = '1.3.41'
 		springBootVersion = '2.2.0.M5'
 		propDepsVersion = '0.0.9.RELEASE'
+		gitPropertiesVersion = '2.0.0'
 	}
 	repositories {
 		mavenCentral()
 		maven { url "https://repo.spring.io/snapshot" }
 		maven { url "https://repo.spring.io/milestone" }
 		maven { url 'https://repo.spring.io/plugins-release' }
+		maven { url "https://plugins.gradle.org/m2/" }
 	}
 	dependencies {
 		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
 		classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
 		classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}")
 		classpath("io.spring.gradle:propdeps-plugin:${propDepsVersion}")
+		classpath("gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:${gitPropertiesVersion}")
 	}
 }
 
@@ -27,6 +30,7 @@ apply plugin: 'propdeps'
 apply plugin: 'propdeps-maven'
 apply plugin: 'propdeps-idea'
 apply plugin: 'propdeps-eclipse'
+apply plugin: 'com.gorylenko.gradle-git-properties'
 
 group = 'io.projectreactor'
 version = '0.0.3-SNAPSHOT'
@@ -47,6 +51,7 @@ repositories {
 
 dependencies {
 	compile('org.springframework.boot:spring-boot-starter-webflux')
+	compile('org.springframework.boot:spring-boot-starter-actuator')
 	compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
 	compile("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
 	compile('io.projectreactor.kotlin:reactor-kotlin-extensions')
@@ -54,6 +59,10 @@ dependencies {
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 	testCompile('io.projectreactor:reactor-test')
 	optional "org.springframework.boot:spring-boot-configuration-processor"
+}
+
+springBoot {
+  buildInfo()
 }
 
 
