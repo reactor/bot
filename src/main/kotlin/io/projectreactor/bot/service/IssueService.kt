@@ -28,17 +28,17 @@ class IssueService(@Qualifier("githubClient") val client: WebClient) {
                 .body("[\"$label\"]")
                 .retrieve()
                 .bodyToMono<String>()
-                .doOnSubscribe { LOG.debug("Applying label $label to ${repo.org}/${repo.repo}#${issue.number}") }
-                .doOnNext { FastTrackService.LOG.trace("Label details: $it") }
+                .doFirst { LOG.debug("Applying label $label to ${repo.org}/${repo.repo}#${issue.number}") }
+                .doOnNext { LOG.trace("Label details: $it") }
                 .doOnError {
                     if (it is WebClientResponseException) {
-                        FastTrackService.LOG.error("GitHub error applying label: ${it.message}" +
+                        LOG.error("GitHub error applying label: ${it.message}" +
                                 "\n${it.responseBodyAsString}")
                     }
                     else
-                        FastTrackService.LOG.error("GitHub error applying label: ${it.message}")
+                        LOG.error("GitHub error applying label: ${it.message}")
                 }
-                .doOnSuccess { FastTrackService.LOG.debug("Done: Applying label") }
+                .doOnSuccess { LOG.debug("Done: Applying label") }
     }
 
     fun comment(comment: String, issue: IssueOrPr, repo: Repo): Mono<String> {
@@ -49,15 +49,15 @@ class IssueService(@Qualifier("githubClient") val client: WebClient) {
                 .body("{\"body\": \"$comment\"}")
                 .retrieve()
                 .bodyToMono<String>()
-                .doOnSubscribe { LOG.debug("Commenting on ${repo.org}/${repo.repo}#${issue.number}") }
+                .doFirst { LOG.debug("Commenting on ${repo.org}/${repo.repo}#${issue.number}") }
                 .doOnError {
                     if (it is WebClientResponseException) {
-                        FastTrackService.LOG.error("GitHub error commenting: ${it.message}" +
+                        LOG.error("GitHub error commenting: ${it.message}" +
                                 "\n${it.responseBodyAsString}")
                     }
                     else
-                        FastTrackService.LOG.error("GitHub error commenting: ${it.message}")
+                        LOG.error("GitHub error commenting: ${it.message}")
                 }
-                .doOnSuccess { FastTrackService.LOG.debug("Done commenting") }
+                .doOnSuccess { LOG.debug("Done commenting") }
     }
 }

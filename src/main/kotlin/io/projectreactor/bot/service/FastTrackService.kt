@@ -54,13 +54,13 @@ class FastTrackService(val ghProps: GitHubProperties,
                         client.delete()
                                 .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews/${review.id}")
                                 .exchange()
-                                .doOnSubscribe { LOG.debug("Deleting PENDING bot review ${review.html_url}") }
+                                .doFirst { LOG.debug("Deleting PENDING bot review ${review.html_url}") }
                     else
                         client.put()
                                 .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews/${review.id}/dismissals")
                                 .body("{\"message\": \"Fast-track cancelled by @${event.sender.login}\"}")
                                 .exchange()
-                                .doOnSubscribe { LOG.debug("Dismissing bot review ${review.html_url}") }
+                                .doFirst { LOG.debug("Dismissing bot review ${review.html_url}") }
                 },5)
                 .ignoreElements()
     }
@@ -265,7 +265,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                         .body(reviewPayload)
                         .retrieve()
                         .bodyToFlux<ResponseReview>()
-                        .doOnSubscribe { LOG.debug("No current review, creating one") }
+                        .doFirst { LOG.debug("No current review, creating one") }
                 )
                 .single()
                 .doOnNext { LOG.trace("Bot Review: $it") }

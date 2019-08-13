@@ -59,10 +59,12 @@ class CommentService(val ghProps: GitHubProperties,
     }
 
     protected fun label(label: String, event: CommentEvent, repo: Repo): Mono<ResponseEntity<String>> {
+        //TODO implement setting a label via comment
         return ResponseEntity.noContent().build<String>().toMono()
     }
 
     protected fun assignToAuthor(event: CommentEvent, repo: Repo): Mono<ResponseEntity<String>> {
+        //TODO implement assigning to author via comment
         return ResponseEntity.noContent().build<String>().toMono()
     }
 }
