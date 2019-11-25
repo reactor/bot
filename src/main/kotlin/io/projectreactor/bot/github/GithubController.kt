@@ -41,7 +41,12 @@ class GithubController(val fastTrackService: FastTrackService,
 
         if (event.action == "closed" && event.pull_request.merged && event.pull_request.base != null
                 && event.pull_request.base.ref.endsWith(".x")) {
-            return issueService.comment("@${event.pull_request.author.login} this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to intermediate maintenance branches and up to `master` :bow:",
+            val maintainersToPing = maintainersToPing(
+                    event.pull_request.author.login,
+                    event.pull_request.merged_by?.login,
+                    repo.maintainers.keys)
+
+            return issueService.comment("$maintainersToPing this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to intermediate maintenance branches and up to `master` :bow:",
                                 event.pull_request, repo)
                     .map { ResponseEntity.ok(it?.toString() ?: "") }
         }
@@ -63,6 +68,16 @@ class GithubController(val fastTrackService: FastTrackService,
         return commentService.parseCommand(event.comment.body.removePrefix(prefix),
                 event, repo)
                 .timeout(Duration.ofSeconds(4))
+    }
+
+    companion object {
+
+        fun maintainersToPing(author: String, merger: String?, maintainers: Set<String>): String =
+                when {
+                    merger != null -> "@${merger}"
+                    maintainers.contains(author) -> "@$author"
+                    else -> maintainers.joinToString { "@$it" }
+                }
     }
 
 }
