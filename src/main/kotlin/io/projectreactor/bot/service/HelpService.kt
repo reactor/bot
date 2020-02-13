@@ -2,8 +2,8 @@ package io.projectreactor.bot.service;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
-import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.node.ArrayNode
+import org.springframework.stereotype.Service
 
 /**
  * @author Simon Baslé
@@ -28,9 +28,8 @@ class HelpService(private val jsonMapper: ObjectMapper) {
 		return helpMessage
 	}
 
-	fun dumpHelpSlackBlocksJson(): ObjectNode {
-		val help = jsonMapper.createObjectNode()
-		val blocks = help.putArray("blocks")
+	fun dumpHelpSlackBlocksJson(): ArrayNode {
+		val blocks = jsonMapper.createArrayNode()
 
 		blocks.addObject()
 				.put("type", "context")
@@ -49,7 +48,7 @@ class HelpService(private val jsonMapper: ObjectMapper) {
 			}
 			section.put("text", text)
 		}
-		return help
+		return blocks
 	}
 }
 
