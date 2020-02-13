@@ -25,7 +25,7 @@ class IssueService(@Qualifier("githubClient") val client: WebClient) {
         val number = issue.number
         return client.post()
                 .uri("/repos/$owner/issues/$number/labels")
-                .body("[\"$label\"]")
+                .bodyValue("[\"$label\"]")
                 .retrieve()
                 .bodyToMono<String>()
                 .doFirst { LOG.debug("Applying label $label to ${repo.org}/${repo.repo}#${issue.number}") }
@@ -46,7 +46,7 @@ class IssueService(@Qualifier("githubClient") val client: WebClient) {
         val number = issue.number
         return client.post()
                 .uri("/repos/$owner/issues/$number/comments")
-                .body("{\"body\": \"$comment\"}")
+                .bodyValue("{\"body\": \"$comment\"}")
                 .retrieve()
                 .bodyToMono<String>()
                 .doFirst { LOG.debug("Commenting on ${repo.org}/${repo.repo}#${issue.number}") }

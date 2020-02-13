@@ -58,7 +58,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                     else
                         client.put()
                                 .uri("/repos/${repo.org}/${repo.repo}/pulls/${event.number}/reviews/${review.id}/dismissals")
-                                .body("{\"message\": \"Fast-track cancelled by @${event.sender.login}\"}")
+                                .bodyValue("{\"message\": \"Fast-track cancelled by @${event.sender.login}\"}")
                                 .exchange()
                                 .doFirst { LOG.debug("Dismissing bot review ${review.html_url}") }
                 },5)
@@ -262,7 +262,7 @@ class FastTrackService(val ghProps: GitHubProperties,
         return getBotReviews(event, repo, true)
                 .switchIfEmpty(client.post()
                         .uri(reviewUri)
-                        .body(reviewPayload)
+                        .bodyValue(reviewPayload)
                         .retrieve()
                         .bodyToFlux<ResponseReview>()
                         .doFirst { LOG.debug("No current review, creating one") }

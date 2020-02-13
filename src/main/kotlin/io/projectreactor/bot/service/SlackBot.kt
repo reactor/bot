@@ -24,13 +24,13 @@ class SlackBot(@Qualifier("slackClient") private val client: WebClient) {
         return if (linkNames)
             client.post()
                     .attribute("link_names", 1)
-                    .body(message)
+                    .bodyValue(message)
                     .exchange()
                     .doOnError { LOG.error("Error during SlackBot phase", it) }
                     .flatMap { it.toEntity(String::class.java) }
         else
             client.post()
-                    .body(message)
+                    .bodyValue(message)
                     .exchange()
                     .doOnError { LOG.error("Error during SlackBot phase", it) }
                     .flatMap { it.toEntity(String::class.java) }
@@ -45,7 +45,7 @@ class SlackBot(@Qualifier("slackClient") private val client: WebClient) {
         }
         return client.post()
                 .uri("https://slack.com/api/chat.postMessage")
-                .body(body)
+                .bodyValue(body)
                 .exchange()
                 .flatMap { it.toEntity(String::class.java) }
     }
