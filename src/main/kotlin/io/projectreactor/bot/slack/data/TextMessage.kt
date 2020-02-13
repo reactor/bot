@@ -1,3 +1,5 @@
 package io.projectreactor.bot.slack.data
 
-data class TextMessage(val text: String?, val attachments: List<Attachment>?)
+import com.fasterxml.jackson.databind.JsonNode
+
+data class TextMessage(val text: String?, val blocks: JsonNode? = null, val attachments: List<Attachment>? = null)

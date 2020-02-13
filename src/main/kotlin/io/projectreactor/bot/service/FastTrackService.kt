@@ -121,7 +121,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                 )
         )
 
-        return TextMessage(null, listOf(rich))
+        return TextMessage(text = null, attachments = listOf(rich))
     }
 
     protected fun msgFastTrackApproved(pr: PullRequest, repo: Repo,
@@ -151,7 +151,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                 ),
                 footer = "PR Review by bot: ${review.html_url}"
         )
-        return TextMessage(null, listOf(reason))
+        return TextMessage(text = null, attachments = listOf(reason))
     }
 
     protected fun msgCancelFastTrack(pr: PullRequest, senderMention: String, senderRaw: String)
@@ -169,7 +169,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                 ),
                 footer = "PR was not merged and label was removed by @$senderRaw"
         )
-        return TextMessage(null, listOf(message))
+        return TextMessage(text = null, attachments = listOf(message))
     }
 
     protected fun msgReviewedFastTrack(pr: PullRequest,
@@ -189,7 +189,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                 ),
                 footer = "PR was merged by @$mergerRaw and label was removed by @$senderRaw"
         )
-        return TextMessage(null, listOf(message))
+        return TextMessage(text = null, attachments = listOf(message))
     }
 
     protected fun msgGithubError(pr: PullRequest, eventType: String, error: Throwable) : TextMessage {
@@ -208,7 +208,7 @@ class FastTrackService(val ghProps: GitHubProperties,
                         Field("Error Details", errorDetail)
                 )
         )
-        return TextMessage(null, listOf(message))
+        return TextMessage(text = null, attachments = listOf(message))
     }
 
     fun findRepo(repo: Repository) : Repo? {
