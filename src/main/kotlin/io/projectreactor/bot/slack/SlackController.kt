@@ -46,8 +46,9 @@ class SlackController(val slackBot: SlackBot, private val helpService: HelpServi
 
         if (node.get("type")?.asText() == "event_callback") {
             val event = node.get("event")
+            val eventType = event.get("type").asText()
 
-            if (event.get("type").asText() == "app_mention") {
+            if (eventType == "app_mention" || (eventType == "message" && event.get("channel_type")?.asText() == "im")) {
                 val user = event.get("user").asText()
                 val channel = event.get("channel").asText()
                 val text = event.get("text").asText()
