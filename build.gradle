@@ -33,7 +33,7 @@ apply plugin: 'propdeps-eclipse'
 apply plugin: 'com.gorylenko.gradle-git-properties'
 
 group = 'io.projectreactor'
-version = '0.0.3-SNAPSHOT'
+version = '0.0.4-SNAPSHOT'
 sourceCompatibility = 1.8
 compileKotlin {
 	kotlinOptions.jvmTarget = "1.8"

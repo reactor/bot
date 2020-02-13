@@ -14,20 +14,26 @@ import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 
 /**
+ * Parses commands from github
  * @author Simon Baslé
  */
 @Service
 class CommentService(val ghProps: GitHubProperties,
                      val slackBot: SlackBot,
                      val fastTrackService: FastTrackService,
-                     @Qualifier("githubClient") val client: WebClient) {
+                     @Qualifier("githubClient") val client: WebClient,
+                     helpService: HelpService) {
 
     companion object {
         val LOG = LoggerFactory.getLogger(CommentService::class.java)
 
-        val LABEL_PREFIX = "label "
-        val ASSIGN_PREFIX = "assign me"
-        val FAST_TRACK_PREFIX = "fast track"
+        const val LABEL_PREFIX = "label " //unimplemented
+        const val ASSIGN_PREFIX = "assign me" //unimplemented
+        const val FAST_TRACK_PREFIX = "fast track"
+    }
+
+    init {
+        helpService.addHelp(HelpCategory.GITHUB, FAST_TRACK_PREFIX, "Fast track the PR (mark as approved and notifies in Slack), with an optional <message>. Delete the comment to remove the approval.")
     }
 
     fun parseCommand(command: String, event: CommentEvent, repo: Repo): Mono<ResponseEntity<String>> {
