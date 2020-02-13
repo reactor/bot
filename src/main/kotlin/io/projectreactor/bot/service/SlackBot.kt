@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
-import java.io.Serializable
 
 /**
  * @author Simon Baslé
@@ -52,6 +51,13 @@ class SlackBot(@Qualifier("slackClient") private val client: WebClient, private 
                 .bodyValue(body)
                 .exchange()
                 .flatMap { it.toEntity(String::class.java) }
+                .doOnNext {
+                    if (it.statusCode.isError || it.body?.contains("\"ok\":false") != false) {
+                        LOG.warn("error while sending ephemeral message: $it")
+                        LOG.debug("ephemeral message payload was >>>$body<<<")
+                    }
+                }
+                .doOnError { LOG.warn("error while sending ephemeral message", it) }
     }
 
 }

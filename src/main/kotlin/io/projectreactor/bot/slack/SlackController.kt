@@ -61,8 +61,7 @@ class SlackController(val slackBot: SlackBot, private val props: SlackProperties
 
                 if (text.contains("help")) {
                     slackBot.sendEphemeralMessage(channel, user, TextMessage(text = helpService.dumpHelpMarkdown(), blocks = helpService.dumpHelpSlackBlocksJson()))
-                            .subscribe({ if (it.statusCode.isError || it.body?.contains("\"ok\":false") != false) LOG.warn("error while sending help: $it") },
-                                    { LOG.warn("error while sending help", it) })
+                            .subscribe()
                 }
                 return ResponseEntity.ok().build<String>().toMono()
             }
