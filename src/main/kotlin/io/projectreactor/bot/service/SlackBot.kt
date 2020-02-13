@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.toMono
 import java.io.Serializable
 
 /**
@@ -37,12 +38,14 @@ class SlackBot(@Qualifier("slackClient") private val client: WebClient, private 
     }
 
     fun sendEphemeralMessage(channel: String, user: String, message: TextMessage) : Mono<ResponseEntity<String>> {
-        val body: Map<String, Serializable?> = if (message.attachments != null) {
-            mapOf("channel" to channel, "user" to user, "text" to message.text, "attachments" to message.attachments.toTypedArray())
-        }
-        else {
-            mapOf("channel" to channel, "user" to user, "text" to message.text)
-        }
+        //avoid sending messages to the bot itself
+        if (user == props.botId) return ResponseEntity.noContent().build<String>().toMono()
+
+        val body = mutableMapOf<String, Any>("channel" to channel, "user" to user)
+        if (message.text != null) body["text"] = message.text
+        if (message.attachments != null) body["attachments"] = message.attachments
+        if (message.blocks != null) body["blocks"] = message.blocks
+
         return client.post()
                 .uri("https://slack.com/api/chat.postMessage")
                 .headers { it.setBearerAuth(props.botToken) }

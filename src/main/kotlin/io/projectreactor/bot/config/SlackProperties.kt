@@ -10,5 +10,6 @@ class SlackProperties {
 
     var incomingWebhook: String = "INVALID"
     var botToken: String = "INVALID"
+    var botId: String = "INVALID"
 
 }
