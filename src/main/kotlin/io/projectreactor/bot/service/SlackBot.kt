@@ -14,7 +14,7 @@ import java.io.Serializable
  * @author Simon Baslé
  */
 @Service
-class SlackBot(@Qualifier("slackClient") private val client: WebClient) {
+class SlackBot(@Qualifier("slackClient") private val client: WebClient, private val props: SlackProperties) {
 
     companion object {
         val LOG = LoggerFactory.getLogger(SlackBot::class.java)
@@ -45,6 +45,7 @@ class SlackBot(@Qualifier("slackClient") private val client: WebClient) {
         }
         return client.post()
                 .uri("https://slack.com/api/chat.postMessage")
+                .headers { it.setBearerAuth(props.botToken) }
                 .bodyValue(body)
                 .exchange()
                 .flatMap { it.toEntity(String::class.java) }
