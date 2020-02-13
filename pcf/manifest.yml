@@ -3,7 +3,7 @@ applications:
 - name: reactor-bot
   memory: 1G
   instances: 1
-  path: ../build/libs/reactor-bot-0.0.3-SNAPSHOT.jar
+  path: ../build/libs/reactor-bot-0.0.4-SNAPSHOT.jar
   buildpacks:
     - java_buildpack
   disk_quota: 1024M
