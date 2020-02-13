@@ -33,6 +33,9 @@ class HelpService(private val jsonMapper: ObjectMapper) {
 
 		blocks.addObject()
 				.put("type", "context")
+				.putArray("elements")
+				.addObject()
+				.put("type", "mrkdwn")
 				.put("text", "The Reactor Bot watches the following *MEDIUM* for the given `commands`:")
 
 		helpByCategory.forEach { cat ->
