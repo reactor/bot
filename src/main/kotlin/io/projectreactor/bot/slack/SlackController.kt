@@ -33,12 +33,15 @@ class SlackController(val slackBot: SlackBot, private val helpService: HelpServi
     @PostMapping("/slack/events", consumes = [(MediaType.APPLICATION_JSON_VALUE)])
     fun commandHook(@RequestBody node: JsonNode): Mono<ResponseEntity<String>> {
         if (node.get("type")?.asText() == "url_verification") {
-            return if (node.hasNonNull("challenge")) {
-                ResponseEntity.status(200).contentType(MediaType.TEXT_PLAIN).body("" + node["challenge"])
+            if (node.hasNonNull("challenge")) {
+                LOG.info("Challenge from Slack")
+                return ResponseEntity
+                        .status(200)
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .body("" + node["challenge"])
                         .toMono()
-            } else {
-                ResponseEntity.badRequest().build<String>().toMono()
             }
+            return ResponseEntity.badRequest().build<String>().toMono()
         }
 
         if (node.get("type")?.asText() == "event_callback") {
