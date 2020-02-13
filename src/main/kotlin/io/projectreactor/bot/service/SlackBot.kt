@@ -46,7 +46,7 @@ class SlackBot(@Qualifier("slackClient") private val client: WebClient, private 
         if (message.blocks != null) body["blocks"] = message.blocks
 
         return client.post()
-                .uri("https://slack.com/api/chat.postMessage")
+                .uri("https://slack.com/api/chat.postEphemeral")
                 .headers { it.setBearerAuth(props.botToken) }
                 .bodyValue(body)
                 .exchange()
