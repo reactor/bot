@@ -211,14 +211,19 @@ class FastTrackService(val ghProps: GitHubProperties,
         return TextMessage(text = null, attachments = listOf(message))
     }
 
-    fun findRepo(repo: Repository) : Repo? {
-        return ghProps.repos.values
-                .stream()
-                //check the pr is on a relevant repo
-                .filter { repo.full_name == "${it.org}/${it.repo}" }
-                .findFirst()
-                .orElse(null)
-    }
+    fun findRepo(repo: Repository) : Repo? = ghProps.repos.values
+            .stream()
+            //check the pr is on a relevant repo
+            .filter { repo.full_name == "${it.org}/${it.repo}" }
+            .findFirst()
+            .orElseGet { findDefaultRepo(repo) }
+
+    fun findDefaultRepo(repo: Repository) : Repo? = ghProps.repos.values
+            .stream()
+            //check the pr matches a "catchall" repo
+            .filter { it.repo == "*" && repo.full_name.startsWith("${it.org}/") }
+            .findAny()
+            .orElse(null)
 
     fun fastTrack(event: PrUpdate, repo: Repo, msg: String? = null): Mono<ResponseEntity<String>> {
         val pr = event.pull_request
