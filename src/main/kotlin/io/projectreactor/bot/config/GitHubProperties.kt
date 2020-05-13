@@ -18,6 +18,7 @@ class GitHubProperties {
         var org: String = "INVALID"
         var repo: String = "INVALID"
         var watchedLabel: String = "INVALID"
+        var triageLabel: String? = "INVALID"
         /**
          * Map of maintainer information: keys are github handles with '@', values
          * are Slack UIDs.

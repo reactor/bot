@@ -2,6 +2,7 @@ package io.projectreactor.bot.github
 
 import io.projectreactor.bot.config.GitHubProperties
 import io.projectreactor.bot.github.data.CommentEvent
+import io.projectreactor.bot.github.data.IssuesEvent
 import io.projectreactor.bot.github.data.PrUpdate
 import io.projectreactor.bot.service.CommentService
 import io.projectreactor.bot.service.FastTrackService
@@ -68,6 +69,18 @@ class GithubController(val fastTrackService: FastTrackService,
         return commentService.parseCommand(event.comment.body.removePrefix(prefix),
                 event, repo)
                 .timeout(Duration.ofSeconds(4))
+    }
+
+    @PostMapping("gh/issue", consumes = [(MediaType.APPLICATION_JSON_VALUE)])
+    fun issueHook(@RequestBody issueEvent: IssuesEvent): Mono<ResponseEntity<String>> {
+        val repoProp = fastTrackService.findRepo(issueEvent.repository) ?:
+        return ResponseEntity.noContent().build<String>().toMono()
+
+        if (issueEvent.action.contains("opened")) {
+            return issueService.triage(issueEvent.repository, issueEvent.issue.number, repoProp.triageLabel)
+                    .map { ResponseEntity.ok(it?.toString() ?: "") }
+        }
+        return ResponseEntity.noContent().build<String>().toMono()
     }
 
     companion object {
