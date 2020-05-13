@@ -77,8 +77,10 @@ class GithubController(val fastTrackService: FastTrackService,
         return ResponseEntity.noContent().build<String>().toMono()
 
         if (issueEvent.action.contains("opened")) {
-            return issueService.triage(issueEvent.repository, issueEvent.issue.number, repoProp.triageLabel)
-                    .map { ResponseEntity.ok(it?.toString() ?: "") }
+            if (issueEvent.issue.labels.isNullOrEmpty()) {
+                return issueService.triage(issueEvent.repository, issueEvent.issue.number, repoProp.triageLabel)
+                        .map { ResponseEntity.ok(it?.toString() ?: "") }
+            }
         }
         return ResponseEntity.noContent().build<String>().toMono()
     }

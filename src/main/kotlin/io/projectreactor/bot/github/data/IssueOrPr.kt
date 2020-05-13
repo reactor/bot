@@ -14,6 +14,7 @@ data class Issue(var html_url: String,
                  override val number: Int,
                  override val state: String,
                  override val title: String,
+                 val labels: List<Label>,
                  @JsonAlias("user") val author: User) : IssueOrPr()
 
 data class PullRequest(val html_url: String,
