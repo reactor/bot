@@ -12,6 +12,8 @@ class GitHubProperties {
     var token: String? = "INVALID"
     var noCancel: Boolean = false
 
+    val mergeHintRepos: MutableList<String> = mutableListOf()
+
     val repos: MutableMap<String, Repo> = mutableMapOf()
 
     class Repo {

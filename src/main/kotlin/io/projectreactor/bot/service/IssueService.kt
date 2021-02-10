@@ -61,15 +61,17 @@ class IssueService(@Qualifier("githubClient") val client: WebClient) {
                 .doOnSuccess { LOG.debug("Done: Applying label") }
     }
 
-    fun comment(comment: String, issue: IssueOrPr, repo: Repo): Mono<String> {
-        val owner = "${repo.org}/${repo.repo}"
+    fun comment(comment: String, issue: IssueOrPr, repo: Repo): Mono<String>
+        = comment(comment, issue, "${repo.org}/${repo.repo}")
+
+    fun comment(comment: String, issue: IssueOrPr, repoFullName: String): Mono<String> {
         val number = issue.number
         return client.post()
-                .uri("/repos/$owner/issues/$number/comments")
+                .uri("/repos/$repoFullName/issues/$number/comments")
                 .bodyValue("{\"body\": \"$comment\"}")
                 .retrieve()
                 .bodyToMono<String>()
-                .doFirst { LOG.debug("Commenting on ${repo.org}/${repo.repo}#${issue.number}") }
+                .doFirst { LOG.debug("Commenting on ${repoFullName}#${issue.number}") }
                 .doOnError {
                     if (it is WebClientResponseException) {
                         LOG.error("GitHub error commenting: ${it.message}" +

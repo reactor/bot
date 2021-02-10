@@ -27,30 +27,41 @@ class GithubController(val fastTrackService: FastTrackService,
 
     @PostMapping("/gh/pr", consumes = [(MediaType.APPLICATION_JSON_VALUE)])
     fun prHook(@RequestBody event: PrUpdate): Mono<ResponseEntity<String>> {
-        //we need to fallback on synthetic repo to enable blanket hint for PRs merged on maintenance branch
-        val repo = fastTrackService.findRepoConfigOrCommonConfig(event.repository) ?:
-                return ResponseEntity.noContent().build<String>().toMono()
+        //we distinguish the fast track case from the issue merged case by processing closed first
+        if (event.action == "closed") {
+            if (event.pull_request.merged && event.pull_request.base != null
+                    && event.pull_request.base.ref.endsWith(".x")) {
 
-        if (event.action == "labeled" && event.label?.name == repo.watchedLabel) {
-            return fastTrackService.fastTrack(event, repo)
-                    .timeout(Duration.ofSeconds(4))
+                val mergeHintEnabled = ghProps.mergeHintRepos.contains(event.repository.full_name)
+                if (mergeHintEnabled) {
+
+                    val repo = fastTrackService.findExactRepoConfig(event.repository)
+                    val repoMaintainers = repo?.maintainers?.keys ?: emptySet<String>()
+
+                    val maintainersToPing = maintainersToPing(
+                            event.pull_request.author.login,
+                            event.pull_request.merged_by?.login,
+                            repoMaintainers)
+
+                    return issueService.comment("$maintainersToPing this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to intermediate maintenance branches and up to `master` :bow:",
+                            event.pull_request, event.repository.full_name)
+                            .map { ResponseEntity.ok(it?.toString() ?: "") }
+                }
+            }
         }
+        else {
+            val repo = fastTrackService.findExactRepoConfig(event.repository)
+                    ?: return ResponseEntity.noContent().build<String>().toMono()
 
-        if (event.action == "unlabeled" && event.label?.name == repo.watchedLabel) {
-            return fastTrackService.unfastTrack(event, repo)
-                    .timeout(Duration.ofSeconds(4))
-        }
+            if (event.action == "labeled" && event.label?.name == repo.watchedLabel) {
+                return fastTrackService.fastTrack(event, repo)
+                        .timeout(Duration.ofSeconds(4))
+            }
 
-        if (event.action == "closed" && event.pull_request.merged && event.pull_request.base != null
-                && event.pull_request.base.ref.endsWith(".x")) {
-            val maintainersToPing = maintainersToPing(
-                    event.pull_request.author.login,
-                    event.pull_request.merged_by?.login,
-                    repo.maintainers.keys)
-
-            return issueService.comment("$maintainersToPing this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to intermediate maintenance branches and up to `master` :bow:",
-                                event.pull_request, repo)
-                    .map { ResponseEntity.ok(it?.toString() ?: "") }
+            if (event.action == "unlabeled" && event.label?.name == repo.watchedLabel) {
+                return fastTrackService.unfastTrack(event, repo)
+                        .timeout(Duration.ofSeconds(4))
+            }
         }
 
         return ResponseEntity.noContent().build<String>().toMono()
@@ -75,6 +86,7 @@ class GithubController(val fastTrackService: FastTrackService,
     @PostMapping("gh/issue", consumes = [(MediaType.APPLICATION_JSON_VALUE)])
     fun issueHook(@RequestBody issueEvent: IssuesEvent): Mono<ResponseEntity<String>> {
         //we need to fallback on synthetic repo to enable blanket triage labelling
+        //note that projects which don't even have the common label won't be notified
         val repoProp = fastTrackService.findRepoConfigOrCommonConfig(issueEvent.repository) ?:
                 return ResponseEntity.noContent().build<String>().toMono()
 
