@@ -27,7 +27,8 @@ class GithubController(val fastTrackService: FastTrackService,
 
     @PostMapping("/gh/pr", consumes = [(MediaType.APPLICATION_JSON_VALUE)])
     fun prHook(@RequestBody event: PrUpdate): Mono<ResponseEntity<String>> {
-        val repo = fastTrackService.findRepo(event.repository) ?:
+        //we need to fallback on synthetic repo to enable blanket hint for PRs merged on maintenance branch
+        val repo = fastTrackService.findRepoConfigOrCommonConfig(event.repository) ?:
                 return ResponseEntity.noContent().build<String>().toMono()
 
         if (event.action == "labeled" && event.label?.name == repo.watchedLabel) {
@@ -57,7 +58,7 @@ class GithubController(val fastTrackService: FastTrackService,
 
     @PostMapping("/gh/comment", consumes = [(MediaType.APPLICATION_JSON_VALUE)])
     fun commentHook(@RequestBody event: CommentEvent): Mono<ResponseEntity<String>> {
-        val repo = fastTrackService.findRepo(event.repository)
+        val repo = fastTrackService.findExactRepoConfig(event.repository)
                 ?: return ResponseEntity.noContent().build<String>().toMono()
 
         val prefix = "@${ghProps.botUsername} "
@@ -73,8 +74,9 @@ class GithubController(val fastTrackService: FastTrackService,
 
     @PostMapping("gh/issue", consumes = [(MediaType.APPLICATION_JSON_VALUE)])
     fun issueHook(@RequestBody issueEvent: IssuesEvent): Mono<ResponseEntity<String>> {
-        val repoProp = fastTrackService.findRepo(issueEvent.repository) ?:
-        return ResponseEntity.noContent().build<String>().toMono()
+        //we need to fallback on synthetic repo to enable blanket triage labelling
+        val repoProp = fastTrackService.findRepoConfigOrCommonConfig(issueEvent.repository) ?:
+                return ResponseEntity.noContent().build<String>().toMono()
 
         if (issueEvent.action.contains("opened")) {
             if (issueEvent.issue.labels.isNullOrEmpty()) {
@@ -91,6 +93,7 @@ class GithubController(val fastTrackService: FastTrackService,
                 when {
                     merger != null -> "@${merger}"
                     maintainers.contains(author) -> "@$author"
+                    maintainers.isEmpty() -> "maintainers,"
                     else -> maintainers.joinToString { "@$it" }
                 }
     }

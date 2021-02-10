@@ -211,18 +211,38 @@ class FastTrackService(val ghProps: GitHubProperties,
         return TextMessage(text = null, attachments = listOf(message))
     }
 
-    fun findRepo(repo: Repository) : Repo? = ghProps.repos.values
+    fun findExactRepoConfig(repo: Repository) : Repo? = ghProps.repos.values
             .stream()
             //check the pr is on a relevant repo
             .filter { repo.full_name == "${it.org}/${it.repo}" }
             .findFirst()
-            .orElseGet { findDefaultRepo(repo) }
+            .orElse(null)
 
-    fun findDefaultRepo(repo: Repository) : Repo? = ghProps.repos.values
+    fun findRepoConfigOrCommonConfig(repo: Repository) : Repo? = ghProps.repos.values
+            .stream()
+            //check the pr is on a relevant repo
+            .filter { repo.full_name == "${it.org}/${it.repo}" }
+            .findFirst()
+            //we need to fallback on synthetic repo to enable blanket hint for PRs merged on maintenance branch
+            .orElseGet { emulateRepoFromCommonConfig(repo) }
+
+    fun emulateRepoFromCommonConfig(repo: Repository) : Repo? = ghProps.repos.values
             .stream()
             //check the pr matches a "catchall" repo
             .filter { it.repo == "*" && repo.full_name.startsWith("${it.org}/") }
             .findAny()
+            .map { genericRepo ->
+                val repoName = repo.name
+                val syntheticRepo = Repo()
+                with(syntheticRepo) {
+                    org = genericRepo.org
+                    this.repo = repoName
+                    maintainers = genericRepo.maintainers
+                    triageLabel = genericRepo.triageLabel
+                    watchedLabel = genericRepo.watchedLabel
+                }
+                syntheticRepo
+            }
             .orElse(null)
 
     fun fastTrack(event: PrUpdate, repo: Repo, msg: String? = null): Mono<ResponseEntity<String>> {
