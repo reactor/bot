@@ -19,7 +19,7 @@ class GitHubPropertiesTest {
     @Test
     fun hasMergeHintRepoList() {
         assertThat(config?.mergeHintRepos)
-                .contains("reactor/reactor-core", "reactor/reactor-pool")
+                .contains("org/example1", "org/example2")
     }
 
     @Test
