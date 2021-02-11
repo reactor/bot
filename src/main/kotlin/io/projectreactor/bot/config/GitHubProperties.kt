@@ -12,13 +12,15 @@ class GitHubProperties {
     var token: String? = "INVALID"
     var noCancel: Boolean = false
 
+    val mergeHintRepos: MutableList<String> = mutableListOf()
+
     val repos: MutableMap<String, Repo> = mutableMapOf()
 
     class Repo {
         var org: String = "INVALID"
         var repo: String = "INVALID"
-        var watchedLabel: String = "INVALID"
-        var triageLabel: String? = "INVALID"
+        var watchedLabel: String = "INVALIDLABEL"
+        var triageLabel: String? = "INVALIDLABEL"
         /**
          * Map of maintainer information: keys are github handles with '@', values
          * are Slack UIDs.
