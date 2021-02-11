@@ -4,12 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
-import org.springframework.core.env.CommandLinePropertySource;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertiesPropertySource;
@@ -31,16 +27,8 @@ public class LocalSettingsEnvironmentPostProcessor implements EnvironmentPostPro
 			MutablePropertySources propertySources = configurableEnvironment.getPropertySources();
 			System.out.println("Loading local settings from " + file.getAbsolutePath());
 			Properties properties = loadProperties(file);
-			if (propertySources.contains(
-					CommandLinePropertySource.COMMAND_LINE_PROPERTY_SOURCE_NAME)) {
-				propertySources.addAfter(
-						CommandLinePropertySource.COMMAND_LINE_PROPERTY_SOURCE_NAME,
-						new PropertiesPropertySource("reactor-bot-local", properties));
-			}
-			else {
-				propertySources
-						.addFirst(new PropertiesPropertySource("reactor-bot-local", properties));
-			}
+			propertySources.addBefore("applicationConfig: [classpath:/application.properties]",
+					new PropertiesPropertySource("reactor-bot-local", properties));
 		}
 		else {
 			System.out.println("Could not find local settings, no " + file.getAbsolutePath());
