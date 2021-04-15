@@ -43,7 +43,7 @@ class GithubController(val fastTrackService: FastTrackService,
                             event.pull_request.merged_by?.login,
                             repoMaintainers)
 
-                    return issueService.comment("$maintainersToPing this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to intermediate maintenance branches and up to `master` :bow:",
+                    return issueService.comment("$maintainersToPing this PR seems to have been merged on a maintenance branch, please ensure the change is merge-forwarded to intermediate maintenance branches and up to `main` :bow:",
                             event.pull_request, event.repository.full_name)
                             .map { ResponseEntity.ok(it?.toString() ?: "") }
                 }
