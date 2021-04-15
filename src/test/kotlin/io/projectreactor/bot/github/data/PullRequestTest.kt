@@ -24,7 +24,7 @@ class PullRequestTest {
                 "open", "Another proofreading pass", User("Buzzardo"),
                 false, null,null,
                 "CONTRIBUTOR",
-                GitRef("reactor:master", "master","c2111862dd0087c1da9be181c4e0284d74a8f858")
+                GitRef("reactor:main", "main","c2111862dd0087c1da9be181c4e0284d74a8f858")
         )
 
         val pr = objectMapper?.readValue<PullRequest>(json)

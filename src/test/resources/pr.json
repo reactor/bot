@@ -157,12 +157,12 @@
       "forks": 0,
       "open_issues": 0,
       "watchers": 0,
-      "default_branch": "master"
+      "default_branch": "main"
     }
   },
   "base": {
-    "label": "reactor:master",
-    "ref": "master",
+    "label": "reactor:main",
+    "ref": "main",
     "sha": "c2111862dd0087c1da9be181c4e0284d74a8f858",
     "user": {
       "login": "reactor",
@@ -270,7 +270,7 @@
       "forks": 157,
       "open_issues": 25,
       "watchers": 975,
-      "default_branch": "master"
+      "default_branch": "main"
     }
   },
   "_links": {
