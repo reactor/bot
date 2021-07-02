@@ -21,6 +21,10 @@ buildscript {
 	}
 }
 
+plugins {
+	id "com.diffplug.spotless" version "5.14.0"
+}
+
 apply plugin: 'kotlin'
 apply plugin: 'kotlin-spring'
 apply plugin: 'eclipse'
@@ -35,6 +39,11 @@ apply plugin: 'com.gorylenko.gradle-git-properties'
 group = 'io.projectreactor'
 version = '0.0.4-SNAPSHOT'
 sourceCompatibility = 1.8
+
+ext {
+	isCiServer = System.getenv().containsKey("CI")
+}
+
 compileKotlin {
 	kotlinOptions.jvmTarget = "1.8"
 }
@@ -63,6 +72,33 @@ dependencies {
 
 springBoot {
   buildInfo()
+}
+
+spotless {
+	if (project.hasProperty("spotlessFrom")) {
+		if (project.spotlessFrom == "ALL") {
+			println "[Spotless] Ratchet deactivated"
+		}
+		else {
+			println "[Spotless] Ratchet from $project.spotlessFrom"
+			ratchetFrom project.spotlessFrom
+		}
+	}
+	else if (isCiServer) {
+		println "[Spotless] CI detected without explicit branch, not enforcing check"
+		enforceCheck false
+	}
+	else {
+		String spotlessBranch = "origin/main"
+		println "[Spotless] Local run detected, ratchet from $spotlessBranch"
+		ratchetFrom spotlessBranch
+	}
+	kotlin {
+		licenseHeaderFile('codequality/spotless/licenseSlashstarStyle.txt')
+	}
+	java {
+		licenseHeaderFile('codequality/spotless/licenseSlashstarStyle.txt')
+	}
 }
 
 
