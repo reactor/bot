@@ -19,8 +19,6 @@ package io.projectreactor.bot.service
 import io.projectreactor.bot.config.GitHubProperties
 import io.projectreactor.bot.config.GitHubProperties.Repo
 import io.projectreactor.bot.github.data.CommentEvent
-import io.projectreactor.bot.github.data.Organization
-import io.projectreactor.bot.github.data.PrUpdate
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.ResponseEntity
@@ -36,7 +34,6 @@ import reactor.kotlin.core.publisher.toMono
 @Service
 class CommentService(val ghProps: GitHubProperties,
                      val slackBot: SlackBot,
-                     val fastTrackService: FastTrackService,
                      @Qualifier("githubClient") val client: WebClient,
                      helpService: HelpService) {
 
@@ -45,37 +42,16 @@ class CommentService(val ghProps: GitHubProperties,
 
         const val LABEL_PREFIX = "label " //unimplemented
         const val ASSIGN_PREFIX = "assign me" //unimplemented
-        const val FAST_TRACK_PREFIX = "fast track"
     }
 
     init {
-        helpService.addHelp(HelpCategory.GITHUB, FAST_TRACK_PREFIX, "Fast track the PR (mark as approved and notifies in Slack), with an optional <message>. Delete the comment to remove the approval.")
+        helpService.addHelp(HelpCategory.GITHUB, LABEL_PREFIX, "Ask the bot to add a label (currently unsupported)")
     }
 
     fun parseCommand(command: String, event: CommentEvent, repo: Repo): Mono<ResponseEntity<String>> {
         when {
             command.startsWith(LABEL_PREFIX) -> return label(command.removePrefix(LABEL_PREFIX), event, repo)
             command.startsWith(ASSIGN_PREFIX) -> return assignToAuthor(event, repo)
-            command.startsWith(FAST_TRACK_PREFIX) -> {
-                val msg = command
-                        .removePrefix(FAST_TRACK_PREFIX)
-                        .trimStart()
-
-                val deleted = event.action == "deleted"
-
-                val prEvent = PrUpdate(
-                        if (deleted) "unlabeled" else "labeled",
-                        event.issue.number,
-                        event.issue,
-                        event.repository,
-                        null,
-                        event.comment.user)
-
-                return if (deleted)
-                    fastTrackService.unfastTrack(prEvent, repo)
-                else
-                    fastTrackService.fastTrack(prEvent, repo, msg)
-            }
             else -> return ResponseEntity.noContent().build<String>().toMono()
         }
     }

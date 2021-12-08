@@ -21,7 +21,7 @@ import io.projectreactor.bot.github.data.CommentEvent
 import io.projectreactor.bot.github.data.IssuesEvent
 import io.projectreactor.bot.github.data.PrUpdate
 import io.projectreactor.bot.service.CommentService
-import io.projectreactor.bot.service.FastTrackService
+import io.projectreactor.bot.service.RepoConfigService
 import io.projectreactor.bot.service.IssueService
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -36,7 +36,7 @@ import java.time.Duration
  * @author Simon Baslé
  */
 @RestController
-class GithubController(val fastTrackService: FastTrackService,
+class GithubController(val repoConfigService: RepoConfigService,
                        val commentService: CommentService,
                        val issueService: IssueService,
                        val ghProps: GitHubProperties) {
@@ -51,7 +51,7 @@ class GithubController(val fastTrackService: FastTrackService,
                 val mergeHintEnabled = ghProps.mergeHintRepos.contains(event.repository.full_name)
                 if (mergeHintEnabled) {
 
-                    val repo = fastTrackService.findExactRepoConfig(event.repository)
+                    val repo = repoConfigService.findExactRepoConfig(event.repository)
                     val repoMaintainers = repo?.maintainers?.keys ?: emptySet<String>()
 
                     val maintainersToPing = maintainersToPing(
@@ -65,27 +65,13 @@ class GithubController(val fastTrackService: FastTrackService,
                 }
             }
         }
-        else {
-            val repo = fastTrackService.findExactRepoConfig(event.repository)
-                    ?: return ResponseEntity.noContent().build<String>().toMono()
-
-            if (event.action == "labeled" && event.label?.name == repo.watchedLabel) {
-                return fastTrackService.fastTrack(event, repo)
-                        .timeout(Duration.ofSeconds(4))
-            }
-
-            if (event.action == "unlabeled" && event.label?.name == repo.watchedLabel) {
-                return fastTrackService.unfastTrack(event, repo)
-                        .timeout(Duration.ofSeconds(4))
-            }
-        }
 
         return ResponseEntity.noContent().build<String>().toMono()
     }
 
     @PostMapping("/gh/comment", consumes = [(MediaType.APPLICATION_JSON_VALUE)])
     fun commentHook(@RequestBody event: CommentEvent): Mono<ResponseEntity<String>> {
-        val repo = fastTrackService.findExactRepoConfig(event.repository)
+        val repo = repoConfigService.findExactRepoConfig(event.repository)
                 ?: return ResponseEntity.noContent().build<String>().toMono()
 
         val prefix = "@${ghProps.botUsername} "
@@ -103,7 +89,7 @@ class GithubController(val fastTrackService: FastTrackService,
     fun issueHook(@RequestBody issueEvent: IssuesEvent): Mono<ResponseEntity<String>> {
         //we need to fallback on synthetic repo to enable blanket triage labelling
         //note that projects which don't even have the common label won't be notified
-        val repoProp = fastTrackService.findRepoConfigOrCommonConfig(issueEvent.repository) ?:
+        val repoProp = repoConfigService.findRepoConfigOrCommonConfig(issueEvent.repository) ?:
                 return ResponseEntity.noContent().build<String>().toMono()
 
         if (issueEvent.action.contains("opened")) {
