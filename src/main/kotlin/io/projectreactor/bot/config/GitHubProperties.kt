@@ -28,6 +28,8 @@ class GitHubProperties {
     var token: String? = "INVALID"
     var noCancel: Boolean = false
 
+    var hookSecret: String? = "INVALID"
+
     val mergeHintRepos: MutableList<String> = mutableListOf()
 
     val repos: MutableMap<String, Repo> = mutableMapOf()
