@@ -43,7 +43,8 @@ public class LocalSettingsEnvironmentPostProcessor implements EnvironmentPostPro
 			MutablePropertySources propertySources = configurableEnvironment.getPropertySources();
 			System.out.println("Loading local settings from " + file.getAbsolutePath());
 			Properties properties = loadProperties(file);
-			propertySources.addBefore("applicationConfig: [classpath:/application.properties]",
+			propertySources.addBefore(
+				"Config resource 'class path resource [application.properties]' via location 'optional:classpath:/'",
 					new PropertiesPropertySource("reactor-bot-local", properties));
 		}
 		else {
