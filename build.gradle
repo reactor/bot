@@ -2,24 +2,24 @@ buildscript {
 	ext {
 		kotlinVersion = '1.6.0'
 		springBootVersion = '2.6.1'
-		gitPropertiesVersion = '2.0.0'
+		gitPropertiesVersion = '2.3.2'
 		spotlessVersion = '6.0.4'
 	}
 	repositories {
-		maven { url "https://plugins.gradle.org/m2/" }
 		mavenCentral()
+		maven { url "https://plugins.gradle.org/m2/" }
 		maven { url 'https://repo.spring.io/plugins-release' }
 	}
 	dependencies {
 		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
 		classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
 		classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}")
-		classpath("gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:${gitPropertiesVersion}")
 	}
 }
 
 plugins {
 	id "com.diffplug.spotless" version "${spotlessVersion}"
+	id "com.gorylenko.gradle-git-properties" version "${gitPropertiesVersion}"
 }
 
 apply plugin: 'kotlin'
