@@ -41,15 +41,15 @@ class SlackBot(@Qualifier("slackClient") private val client: WebClient, private 
             client.post()
                     .attribute("link_names", 1)
                     .bodyValue(message)
-                    .exchange()
+                    .retrieve()
+                    .toEntity(String::class.java)
                     .doOnError { LOG.error("Error during SlackBot phase", it) }
-                    .flatMap { it.toEntity(String::class.java) }
         else
             client.post()
                     .bodyValue(message)
-                    .exchange()
+                    .retrieve()
+                    .toEntity(String::class.java)
                     .doOnError { LOG.error("Error during SlackBot phase", it) }
-                    .flatMap { it.toEntity(String::class.java) }
     }
 
     fun sendEphemeralMessage(channel: String, user: String, message: TextMessage) : Mono<ResponseEntity<String>> {
@@ -65,8 +65,8 @@ class SlackBot(@Qualifier("slackClient") private val client: WebClient, private 
                 .uri("https://slack.com/api/chat.postEphemeral")
                 .headers { it.setBearerAuth(props.botToken) }
                 .bodyValue(body)
-                .exchange()
-                .flatMap { it.toEntity(String::class.java) }
+                .retrieve()
+                .toEntity(String::class.java)
                 .doOnNext {
                     if (it.statusCode.isError || it.body?.contains("\"ok\":false") != false) {
                         LOG.warn("error while sending ephemeral message: $it")
