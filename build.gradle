@@ -1,25 +1,17 @@
 buildscript {
-	ext {
-		kotlinVersion = '1.6.0'
-		springBootVersion = '2.6.1'
-		gitPropertiesVersion = '2.3.2'
-		spotlessVersion = '6.0.4'
-	}
 	repositories {
 		mavenCentral()
 		maven { url "https://plugins.gradle.org/m2/" }
 		maven { url 'https://repo.spring.io/plugins-release' }
 	}
-	dependencies {
-		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-		classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
-		classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}")
-	}
 }
 
 plugins {
-	id "com.diffplug.spotless" version "${spotlessVersion}"
-	id "com.gorylenko.gradle-git-properties" version "${gitPropertiesVersion}"
+	alias(libs.plugins.kotlin)
+	alias(libs.plugins.springKotlin) //equivalent to allOpen
+	alias(libs.plugins.springBoot)
+	alias(libs.plugins.spotless)
+	alias(libs.plugins.gradleGitProperties)
 }
 
 apply plugin: 'kotlin'
@@ -54,8 +46,8 @@ repositories {
 dependencies {
 	implementation('org.springframework.boot:spring-boot-starter-webflux')
 	implementation('org.springframework.boot:spring-boot-starter-actuator')
-	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
-	implementation("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
+	implementation(libs.kotlin.stdlib)
+	implementation(libs.kotlin.reflect)
 	implementation('io.projectreactor.kotlin:reactor-kotlin-extensions')
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	testImplementation('org.springframework.boot:spring-boot-starter-test')

@@ -1,1 +1,5 @@
 rootProject.name = 'reactor-bot'
+
+//libs catalog is declared in ./gradle/libs.versions.toml
+//TODO remove once Version Catalogs are stabilized
+enableFeaturePreview("VERSION_CATALOGS")
