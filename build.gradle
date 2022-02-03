@@ -56,7 +56,11 @@ dependencies {
 }
 
 springBoot {
-  buildInfo()
+	buildInfo()
+}
+
+test {
+	useJUnitPlatform()
 }
 
 spotless {
