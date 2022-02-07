@@ -61,10 +61,12 @@ class GithubHookFilter @Autowired internal constructor(properties: GitHubPropert
     }
 
     override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
+        //only validate gh controller's methods that "write" (not GET)
         if (!exchange.request.path.value().startsWith("/gh/") || exchange.request.method == HttpMethod.GET) {
             return chain.filter(exchange)
         }
 
+        //extract the digest from the headers, convert it to a byte array comparable to that of Java's HMAC (no sha256= prefix)
         val digestGhString = exchange.request.headers.getFirst("X-Hub-Signature-256")
             ?: return Mono.error(ResponseStatusException(HttpStatus.UNAUTHORIZED, "request not signed"))
         val digestGh = digestGhString.replaceFirst("sha256=", "").toByteArray(StandardCharsets.UTF_8)
@@ -76,6 +78,7 @@ class GithubHookFilter @Autowired internal constructor(properties: GitHubPropert
             val hmacVerifDecorator: ServerHttpRequestDecorator = object : ServerHttpRequestDecorator(exchange.request) {
                 @NonNull
                 override fun getBody(): Flux<DataBuffer> {
+                    //we need the whole payload to validate
                     return DataBufferUtils.join(
                         super.getBody()
                             .doOnNext { buf: DataBuffer -> mac.update(buf.asByteBuffer()) }
@@ -83,6 +86,7 @@ class GithubHookFilter @Autowired internal constructor(properties: GitHubPropert
                         .map { buf: DataBuffer ->
                             val bodyDigest = mac.doFinal()
                             val bodyDigestHex = ByteBufUtil.hexDump(bodyDigest).toByteArray()
+                            //note this is a "secure compare": comparison time only depends on the size of the body digest
                             if (!MessageDigest.isEqual(bodyDigestHex, digestGh)) {
                                 throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "bad signature")
                             }
