@@ -67,7 +67,7 @@ class GithubHookFilter @Autowired internal constructor(properties: GitHubPropert
 
         val digestGhString = exchange.request.headers.getFirst("X-Hub-Signature-256")
             ?: return Mono.error(ResponseStatusException(HttpStatus.UNAUTHORIZED, "request not signed"))
-        val digestGh = digestGhString.replaceFirst("256=", "").toByteArray(StandardCharsets.UTF_8)
+        val digestGh = digestGhString.replaceFirst("sha256=", "").toByteArray(StandardCharsets.UTF_8)
 
         return try {
             val mac = Mac.getInstance("HmacSHA256")
