@@ -7,10 +7,17 @@
     ":label(type/dependency-upgrade)",
     ":reviewer(reactor/team)",
     ":timezone(Europe/Paris)",
-    "schedule:nonOfficeHours"
+    "schedule:nonOfficeHours",
+    "group:allNonMajor"
   ],
   "prBodyNotes": [
     "Renovate has been configured to skip the CLA:",
     "@pivotal-cla This is an Obvious Fix"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["gradle-wrapper"],
+      "groupName": "Gradle"
+    }
   ]
 }
