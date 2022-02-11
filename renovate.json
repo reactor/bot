@@ -7,7 +7,6 @@
     ":label(type/dependency-upgrade)",
     ":reviewer(reactor/team)",
     ":timezone(Europe/Paris)",
-    "schedule:nonOfficeHours",
     "group:allNonMajor"
   ],
   "prBodyNotes": [
