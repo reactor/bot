@@ -1,0 +1,22 @@
+{
+  "extends": [
+    "config:base",
+    ":semanticPrefixChore",
+    ":prHourlyLimit4",
+    ":automergeDisabled",
+    ":label(type/dependency-upgrade)",
+    ":reviewer(reactor/team)",
+    ":timezone(Europe/Paris)",
+    "group:allNonMajor"
+  ],
+  "prBodyNotes": [
+    "Renovate has been configured to skip the CLA:",
+    "@pivotal-cla This is an Obvious Fix"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["gradle-wrapper"],
+      "groupName": "Gradle"
+    }
+  ]
+}
