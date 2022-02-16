@@ -10,4 +10,4 @@ gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version = "2
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 springKotlin = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin"}
 springBoot = { id = "org.springframework.boot", version = "2.6.3" }
-spotless = { id = "com.diffplug.spotless", version = "6.2.2" }
+spotless = { id = "com.diffplug.spotless", version = "6.3.0" }
