@@ -9,5 +9,5 @@ kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref =
 gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version = "2.4.0" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 springKotlin = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin"}
-springBoot = { id = "org.springframework.boot", version = "2.6.3" }
-spotless = { id = "com.diffplug.spotless", version = "6.3.0" }
+springBoot = { id = "org.springframework.boot", version = "2.6.6" }
+spotless = { id = "com.diffplug.spotless", version = "6.4.1" }
