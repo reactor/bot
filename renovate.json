@@ -21,6 +21,10 @@
     {
       "matchPackageNames": ["com.diffplug.spotless"],
       "allowedVersions": "<6.14"
+    },
+    {
+      "matchPackageNames": ["org.springframework.boot"],
+      "allowedVersions": "<3"
     }
   ]
 }
