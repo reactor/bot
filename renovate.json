@@ -17,6 +17,10 @@
     {
       "matchManagers": ["gradle-wrapper"],
       "groupName": "Gradle"
+    },
+    {
+      "matchPackageNames": ["com.diffplug.spotless"],
+      "allowedVersions": "<6.14"
     }
   ]
 }
