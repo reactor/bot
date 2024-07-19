@@ -1,12 +1,12 @@
 [versions]
-kotlin = "1.6.10"
+kotlin = "1.9.25"
 
 [libraries]
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 
 [plugins]
-gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version = "2.4.0" }
+gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version = "2.4.2" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 springKotlin = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin"}
 springBoot = { id = "org.springframework.boot", version = "2.7.18" }
